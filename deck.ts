@@ -1,54 +1,59 @@
-enum Suits {
-  spades = "♠️",
-  clubs = "♣️",
-  hearts = "♥️",
-  diamonds = "♦️"
+const Suits = {
+  spades: "♠️",
+  clubs: "♣️",
+  hearts: "♥️",
+  diamonds: "♦️"
 }
 
-enum Symbols {
-  ace = "A",
-  two = "2",
-  three = "3",
-  four = "4",
-  five = "5",
-  six = "6",
-  seven = "7",
-  eight = "8",
-  nine = "9",
-  ten = "10",
-  jack = "J",
-  queen = "Q",
-  king = "K"
+const Symbols = {
+  ace: "A",
+  two: "2",
+  three: "3",
+  four: "4",
+  five: "5",
+  six: "6",
+  seven: "7",
+  eight: "8",
+  nine: "9",
+  ten: "10",
+  jack: "J",
+  queen: "Q",
+  king: "K"
 }
 
 export default class Deck {
   cards: [Card];
 
-  constructor(cards: [Card]) {
+  constructor(cards: [Card] = newDeck()) {
     this.cards = cards;
+  }
+
+  shuffle() {
+    for (var i = this.cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+    }
   }
 }
 
 class Card {
-  suit: Suits;
-  symbol: Symbols;
+  suit: String;
+  symbol: String;
 
-  constructor(suit: Suits, symbol: Symbols) {
+  constructor(suit: String, symbol: String) {
     this.suit = suit;
     this.symbol = symbol;
   }
 }
 
-// export function newDeck() {
-//   let cards = [];
+function newDeck() {
+  let cards = [];
 
-//   for (const suit in Suits) {
-//     for (const symbol in Symbols) {
-//       cards.push(new Card(suit, symbol))
-//     }
-//   }
+  for (const suit in Suits) {
+    for (const symbol in Symbols) {
+      cards.push(new Card(Suits[suit], Symbols[symbol]));
+    }
+  }
 
-//   return new Deck()
-// }
-
-let myCard = new Card(Suits.spades, Symbols.ace);
+  return cards as [Card];
+}
