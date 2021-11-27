@@ -5,37 +5,49 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>Solitaire</title>
   <link rel="stylesheet" href="style.css">
   <link rel="shortcut icon" type="image" href="./favicon.ico">
   <script src="script.js" type="module"></script>
 </head>
 
 <body>
-  <div class="text-title"></div>
-  <div class="table">
-    <div class="stock-container">
-      <div class="card hidden"></div>
-      <div class="card"></div>
-      <div class="card"></div>
-      <div class="card"></div>
-    </div>
-    <div class="working-container">
-      <div class="pile"></div>
-      <div class="pile"></div>
-      <div class="pile"></div>
-      <div class="pile"></div>
-      <div class="pile"></div>
-      <div class="pile"></div>
-      <div class="pile"></div>
-    </div>
-    <div class="foundation-container">
-      <div class="card"></div>
-      <div class="card"></div>
-      <div class="card"></div>
-      <div class="card"></div>
-    </div>
+  <div class="header">
+    <div class="header__title"></div>
   </div>
+  <main class="game">
+    <div class="game__stock-cloth">
+      <div class="pile">
+        <div class="card--hidden"></div>
+        <div class="card--hidden"></div>
+        <div class="card--hidden"></div>
+      </div>
+      <div class="game__stock-cloth__revealed-cards">
+        <div class="card"></div>
+        <div class="card"></div>
+        <div class="card"></div>
+      </div>
+    </div>
+    <div class="game__working-cloth">
+      <div class="game__working-cloth__piles">
+        <div class="pile"></div>
+        <div class="pile"></div>
+        <div class="pile"></div>
+        <div class="pile"></div>
+        <div class="pile"></div>
+        <div class="pile"></div>
+        <div class="pile"></div>
+      </div>
+      <div class="game__working-cloth__game-controls"></div>
+    </div>
+    <div class="game__foundation-cloth">
+      <div class="card--suit-placeholder"></div>
+      <div class="card--suit-placeholder"></div>
+      <div class="card--suit-placeholder"></div>
+      <div class="card--suit-placeholder"></div>
+    </div>
+  </main>
+  <div class="footer"></div>
 </body>
 
 </html>

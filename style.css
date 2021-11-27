@@ -1,17 +1,59 @@
 /* http://getbem.com/naming/ */
 
-.table {
+.game {
   display: grid;
-  grid-template-columns: 3;
+  grid-template-columns: 5em 4fr 5em;
   grid-template-rows: 1;
 }
 
-.working-container {
+.game__stock-cloth, .game__foundation-cloth {
+  background-color: #205314;
+}
+
+.game__stock-cloth, .game__foundation-cloth {
+  padding: 0.4em 0;
+  display: grid;
+  grid-template-columns: 1;
+  grid-template-rows: 4;
+  justify-content: center;
+}
+
+.game__stock-cloth__revealed-cards {
+  display: contents;
+}
+
+.game__working-cloth {
+  background-color: #297817;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.game__working-cloth__piles {
   display: grid;
   grid-template-columns: 7;
   grid-template-rows: 1;
 }
 
+.card, .card--hidden, .deck {
+  margin: 0.3em;
+}
+
+.card, .card--hidden {
+  width: 2.5em;
+  height: 3.5em;
+}
+
 .card {
-  display: block;
+  background-color: #ffffff;
+  border: 5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  box-shadow: 0.2em 0.2em 0 rgba(0, 0, 0, 0.2);
+}
+
+.card--hidden {
+  background-color: #27539b;
+  border: 5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  box-shadow: 0.2em 0.2em 0 rgba(0, 0, 0, 0.2);
 }
