@@ -35,25 +35,43 @@
   grid-template-rows: 1;
 }
 
-.card, .card--hidden, .deck {
+.card, .card--hidden {
   margin: 0.3em;
 }
 
 .card, .card--hidden {
   width: 2.5em;
   height: 3.5em;
+  border-radius: 5px;
+  box-shadow: 0.2em 0.2em 0 rgba(0, 0, 0, 0.2);
 }
 
 .card {
   background-color: #ffffff;
   border: 5px solid rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-  box-shadow: 0.2em 0.2em 0 rgba(0, 0, 0, 0.2);
 }
 
 .card--hidden {
   background-color: #27539b;
   border: 5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
-  box-shadow: 0.2em 0.2em 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Decks should always contain within them three nested cards that are hidden or face-down. */
+.pile *, .deck * {
+  position: relative;
+  left: -0.62em;
+}
+
+.pile, .deck {
+  transform: translateX(0.625em);
+}
+
+.deck * {
+  top: -0.5em;
+}
+
+.deck {
+  position: relative;
+  top: 0.5em;
+  margin-bottom: 0.2em;
 }
