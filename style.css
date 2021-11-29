@@ -1,5 +1,9 @@
 /* http://getbem.com/naming/ */
 
+* {
+  font-family: Arial;
+}
+
 .game {
   display: grid;
   grid-template-columns: 5em 4fr 5em;
@@ -32,34 +36,58 @@
 .game__working-cloth__piles {
   display: grid;
   grid-template-columns: 7;
-  grid-template-rows: 1;
+}
+
+.card.red {
+  color: red;
 }
 
 .card, .card--hidden {
   margin: 0.3em;
-}
-
-.card, .card--hidden {
-  width: 2.5em;
-  height: 3.5em;
   border-radius: 5px;
   box-shadow: 0.2em 0.2em 0 rgba(0, 0, 0, 0.2);
 }
 
 .card {
   background-color: #ffffff;
-  border: 5px solid rgba(0, 0, 0, 0.1);
+  width: 2.5em;
+  height: 3.5em;
+}
+
+.card__top-left, .card__bottom-right {
+  text-align: center;
+  position: relative;
+  width: 40%;
+  line-height: 100%;
+  font-size: 0.8em;
+}
+
+.card__top-left {
+  top: 6%;
+  left: 2%;
+}
+
+.card__bottom-right {
+  transform: rotate(180deg);
+  bottom: -0.12em;
+  right: -1.9em;
+}
+
+.card__corner-suit {
+  font-size: 1.25em;
 }
 
 .card--hidden {
   background-color: #27539b;
-  border: 5px solid rgba(255, 255, 255, 0.1);
+  width: 2.3em;
+  height: 3.3em;
+  border: 0.2em solid rgba(255, 255, 255, 0.1);
 }
 
 /* Decks should always contain within them three nested cards that are hidden or face-down. */
 .pile *, .deck * {
   position: relative;
-  left: -0.62em;
+  left: -0.612em;
 }
 
 .pile, .deck {
@@ -68,6 +96,10 @@
 
 .deck * {
   top: -0.5em;
+}
+
+.deck .card--hidden {
+  box-shadow: none;
 }
 
 .deck {
