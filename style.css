@@ -4,10 +4,18 @@
   font-family: Arial;
 }
 
+body {
+  margin: 0;
+}
+
 .game {
   display: grid;
   grid-template-columns: 5em 4fr 5em;
   grid-template-rows: 1;
+}
+
+.game__stock-cloth, .game__working-cloth, .game__foundation-cloth {
+  display: grid; 
 }
 
 .game__stock-cloth, .game__foundation-cloth {
@@ -16,10 +24,8 @@
 
 .game__stock-cloth, .game__foundation-cloth {
   padding: 0.4em 0;
-  display: grid;
   grid-template-columns: 1;
-  grid-template-rows: 4;
-  justify-content: center;
+  place-items: center;
 }
 
 .game__stock-cloth__revealed-cards {
@@ -42,16 +48,32 @@
   color: red;
 }
 
-.card, .card--hidden {
-  margin: 0.3em;
-  border-radius: 5px;
-  box-shadow: 0.2em 0.2em 0 rgba(0, 0, 0, 0.2);
-}
-
 .card {
   background-color: #ffffff;
   width: 2.5em;
   height: 3.5em;
+}
+
+.card, .card--face-down, .deck {
+  margin: 0.3em;
+  border-radius: 5px;
+  box-shadow: 0.1em 0.1em 0 rgba(0, 0, 0, 0.2);
+}
+
+.card--face-down, .deck {
+  background-color: #27539b;
+  border: 0.15em solid rgba(255, 255, 255, 0.1);
+}
+
+.card--face-down {
+  width: 2.35em;
+  height: 3.35em;
+}
+
+.deck {
+  width: 2.3em;
+  height: 3.3em;
+  border: 0.2em solid rgba(255, 255, 255, 0.1);
 }
 
 .card__top-left, .card__bottom-right {
@@ -77,33 +99,6 @@
   font-size: 1.25em;
 }
 
-.card--hidden {
-  background-color: #27539b;
-  width: 2.3em;
-  height: 3.3em;
-  border: 0.2em solid rgba(255, 255, 255, 0.1);
-}
-
-/* Decks should always contain within them three nested cards that are hidden or face-down. */
-.pile *, .deck * {
-  position: relative;
-  left: -0.612em;
-}
-
-.pile, .deck {
-  transform: translateX(0.625em);
-}
-
-.deck * {
-  top: -0.5em;
-}
-
-.deck .card--hidden {
-  box-shadow: none;
-}
-
-.deck {
-  position: relative;
-  top: 0.5em;
-  margin-bottom: 0.2em;
+.pile * {
+  transform: translateY(-0em);
 }
