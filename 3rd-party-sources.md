@@ -2,8 +2,6 @@
 
 [Copying/Citing/Adapting code rules according to MIT.](https://integrity.mit.edu/handbook/writing-code)
 
-> "You should not simply re-use code as the solution to an assignment. Like academic writing, your code can incorporate the ideas of others but should reflect your original approach to the problem."
-
 - [YouTube video on the card game "War" that inspired my data model in that it gave me an idea of how to structure and name my classes. (Accessed 2021-11-23)](https://youtu.be/NxRwIZWjLtE)
 - [Medium post on card game styling that inspired my card's HTML and CSS layout. One difference between their code and mine is that I'm using images instead of pure text to represent card suits. (Accessed 2021-11-26)](https://medium.com/@pakastin/javascript-playing-cards-part-2-graphics-cd65d331ad00)
 - [Card Suit Icons - Wikimedia (Accessed 2021-12-03)](https://commons.wikimedia.org/wiki/File:Anglo-American_card_suits.svg)

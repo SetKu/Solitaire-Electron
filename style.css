@@ -1,5 +1,9 @@
 /* http://getbem.com/naming/ */
 
+:root {
+  --card-size-multiplier: 1.33;
+}
+
 * {
   font-family: Arial;
 }
@@ -39,8 +43,9 @@ body {
 }
 
 .game__working-cloth__piles {
+  margin-top: 0.45rem;
   display: grid;
-  grid-template-columns: 7;
+  grid-template-columns: repeat(7, 1fr);
 }
 
 .card.red {
@@ -49,30 +54,26 @@ body {
 
 .card {
   background-color: #ffffff;
-  width: 2.5rem;
-  height: 3.5rem;
+  width: calc(2.5rem * var(--card-size-multiplier));
+  height: calc(3.5rem * var(--card-size-multiplier));
 }
 
 .card, .card--face-down, .deck {
   margin: 0.3rem;
   border-radius: 0.3125rem;
   box-shadow: 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.2);
+  width: calc(2.5rem * var(--card-size-multiplier));
+  height: calc(3.5rem * var(--card-size-multiplier));
 }
 
 .card--face-down, .deck {
+  box-sizing: border-box;
   background-color: #27539b;
-  border: 0.15rem solid rgba(255, 255, 255, 0.1);
-}
-
-.card--face-down {
-  width: 2.35rem;
-  height: 3.35rem;
+  border: 0.18rem solid rgba(255, 255, 255, 0.1);
 }
 
 .deck {
-  width: 2.3rem;
-  height: 3.3rem;
-  border: 0.2rem solid rgba(255, 255, 255, 0.1);
+  border: 0.266rem solid rgba(255, 255, 255, 0.1);
 }
 
 .card__top-left, .card__bottom-right {
@@ -80,23 +81,28 @@ body {
   position: relative;
   width: 40%;
   line-height: 100%;
-  font-size: 0.8em;
+  font-size: 1.1em;
 }
 
 .card__top-left {
-  top: 6%;
-  left: 2%;
+  top: calc(0.3rem * var(--card-size-multiplier));
+  left: calc(0.05rem * var(--card-size-multiplier));
 }
 
 .card__bottom-right {
   transform: rotate(180deg);
-  bottom: 0.05rem;
-  right: -1.85em;
+  bottom: calc(0.10526316rem * var(--card-size-multiplier));
+  right: calc(-1.41rem * var(--card-size-multiplier));
 }
 
 .card__corner-suit {
   height: 0.88125em;
   width: 0.6em;
+}
+
+.pile .card, .pile .card--face-down {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .footer {
