@@ -80,7 +80,7 @@ body {
   position: relative;
   width: 40%;
   line-height: 100%;
-  font-size: 0.8rem;
+  font-size: 0.8em;
 }
 
 .card__top-left {
@@ -90,11 +90,28 @@ body {
 
 .card__bottom-right {
   transform: rotate(180deg);
-  bottom: 0.28rem;
+  bottom: 0.05rem;
   right: -1.85em;
 }
 
 .card__corner-suit {
-  height: 0.88125rem;
-  width: 0.6rem;
+  height: 0.88125em;
+  width: 0.6em;
+}
+
+.footer {
+  background-color: #585858;
+  color: #ffffff;
+}
+
+.footer {
+  padding: 10pt;
+}
+
+.footer a:link {
+  color: white;
+}
+
+.footer a:visited {
+  color: rgb(200, 200, 200);
 }

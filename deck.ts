@@ -3,6 +3,11 @@ enum SuitColors {
   red = "red"
 }
 
+/*
+* Deck and Card class naming structure inspired by Web Dev Simplified's video on recreating the card game war for the web.
+* Web Dev Simplified. (2020, November 14). "How To Build A Simple Card Game With JavaScript." YouTube. Retrieved November 23, 2021, from https://youtu.be/NxRwIZWjLtE.
+*/
+
 const Suits = {
   spades: "spades",
   clubs: "clubs",
@@ -50,6 +55,10 @@ class Card {
     this.value = value;
   }
 
+  /*
+  * HTML structuring for cards adapted from code examples shown in a Medium post by Juha Lindstedt.
+  * Lindstedt, Juda. (2018, November 6). "JavaScript Playing Cards Part 2: Graphics." Medium. Retrieved November 26, 2021 from https://medium.com/@pakastin/javascript-playing-cards-part-2-graphics-cd65d331ad00.
+  */
   get cardHTML(): String {
     return `<div class="card ${this.cardColor}">
       <div class="card__top-left">
