@@ -1,7 +1,9 @@
 /* http://getbem.com/naming/ */
 
+@import url(https://fonts.googleapis.com/css?family=Arial);
+
 * {
-  font-family: Arial;
+  font-family: "Arial";
 }
 
 body {
@@ -10,7 +12,7 @@ body {
 
 .game {
   display: grid;
-  grid-template-columns: 5em 4fr 5em;
+  grid-template-columns: 5rem 4fr 5rem;
   grid-template-rows: 1;
 }
 
@@ -50,30 +52,30 @@ body {
 
 .card {
   background-color: #ffffff;
-  width: 2.5em;
-  height: 3.5em;
+  width: 2.5rem;
+  height: 3.5rem;
 }
 
 .card, .card--face-down, .deck {
-  margin: 0.3em;
-  border-radius: 5px;
-  box-shadow: 0.1em 0.1em 0 rgba(0, 0, 0, 0.2);
+  margin: 0.3rem;
+  border-radius: 0.3125rem;
+  box-shadow: 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.2);
 }
 
 .card--face-down, .deck {
   background-color: #27539b;
-  border: 0.15em solid rgba(255, 255, 255, 0.1);
+  border: 0.15rem solid rgba(255, 255, 255, 0.1);
 }
 
 .card--face-down {
-  width: 2.35em;
-  height: 3.35em;
+  width: 2.35rem;
+  height: 3.35rem;
 }
 
 .deck {
-  width: 2.3em;
-  height: 3.3em;
-  border: 0.2em solid rgba(255, 255, 255, 0.1);
+  width: 2.3rem;
+  height: 3.3rem;
+  border: 0.2rem solid rgba(255, 255, 255, 0.1);
 }
 
 .card__top-left, .card__bottom-right {
@@ -81,7 +83,7 @@ body {
   position: relative;
   width: 40%;
   line-height: 100%;
-  font-size: 0.8em;
+  font-size: 0.8rem;
 }
 
 .card__top-left {
@@ -91,14 +93,10 @@ body {
 
 .card__bottom-right {
   transform: rotate(180deg);
-  bottom: -0.12em;
+  bottom: -0.12rem;
   right: -1.9em;
 }
 
 .card__corner-suit {
-  font-size: 1.25em;
-}
-
-.pile * {
-  transform: translateY(-0em);
+  font-size: 1.25rem;
 }
