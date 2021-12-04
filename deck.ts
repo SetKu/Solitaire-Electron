@@ -1,11 +1,16 @@
-const Suits = {
-  spades: "♠️",
-  clubs: "♣️",
-  hearts: "♥️",
-  diamonds: "♦️"
+enum SuitColors {
+  black = "black",
+  red = "red"
 }
 
-const Symbols = {
+const Suits = {
+  spades: "spades",
+  clubs: "clubs",
+  hearts: "hearts",
+  diamonds: "diamonds"
+}
+
+const Values = {
   ace: "A",
   two: "2",
   three: "3",
@@ -38,11 +43,33 @@ export default class Deck {
 
 class Card {
   suit: String;
-  symbol: String;
+  value: String;
 
-  constructor(suit: String, symbol: String) {
+  constructor(suit: String, value: String) {
     this.suit = suit;
-    this.symbol = symbol;
+    this.value = value;
+  }
+
+  get cardHTML(): String {
+    return `<div class="card ${this.cardColor}">
+      <div class="card__top-left">
+        <div class="card__corner-value">${this.value}</div>
+        <img src="media/${this.suit}.svg" class="card__corner-suit">
+      </div>
+      <div class="card__bottom-right">
+        <div class="card__corner-value">${this.value}</div>
+        <img src="media/${this.suit}.svg" class="card__corner-suit">
+      </div>
+    </div>`;
+  }
+
+  get cardColor(): String {
+    switch (this.suit) {
+      case Suits.spades || Suits.clubs:
+        return SuitColors.black;
+      case Suits.diamonds || Suits.hearts:
+        return SuitColors.red;
+    }
   }
 }
 
@@ -50,8 +77,8 @@ function newDeck() {
   let cards = [];
 
   for (const suit in Suits) {
-    for (const symbol in Symbols) {
-      cards.push(new Card(Suits[suit], Symbols[symbol]));
+    for (const value in Values) {
+      cards.push(new Card(Suits[suit], Values[value]));
     }
   }
 
