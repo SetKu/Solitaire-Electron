@@ -1,9 +1,7 @@
 /* http://getbem.com/naming/ */
 
-@import url(https://fonts.googleapis.com/css?family=Arial);
-
 * {
-  font-family: "Arial";
+  font-family: Arial;
 }
 
 body {
@@ -36,9 +34,8 @@ body {
 
 .game__working-cloth {
   background-color: #297817;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1;
 }
 
 .game__working-cloth__piles {
@@ -93,10 +90,11 @@ body {
 
 .card__bottom-right {
   transform: rotate(180deg);
-  bottom: -0.12rem;
-  right: -1.9em;
+  bottom: 0.28rem;
+  right: -1.85em;
 }
 
 .card__corner-suit {
-  font-size: 1.25rem;
+  height: 0.88125rem;
+  width: 0.6rem;
 }
