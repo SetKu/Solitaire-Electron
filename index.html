@@ -13,49 +13,34 @@
 
 <body>
   <div class="header">
-    <div class="header__title"></div>
+    <div class="header__title">Solitaire</div>
+    <img src="media/spades-playing-card-icon.svg" class="header__icon">
   </div>
-  <main class="game">
-    <div class="game__stock-cloth">
-      <div class="deck"></div>
-      <div class="game__stock-cloth__revealed-cards">
-        <div class="card">
-          <div class="card__top-left">
-            <div class="card__corner-value">A</div>
-            <img src="media/spades.svg" class="card__corner-suit">
+  <main class="deck-surface">
+    <div class="game">
+      <div class="game__stock-cloth">
+        <div class="deck"></div>
+        <div class="game__stock-cloth__revealed-cards">
+          <div class="card">
+            <div class="card__top-left">
+              <div class="card__corner-value">A</div>
+              <img src="media/spades.svg" class="card__corner-suit">
+            </div>
+            <div class="card__bottom-right">
+              <div class="card__corner-value">A</div>
+              <img src="media/spades.svg" class="card__corner-suit">
+            </div>
           </div>
-          <div class="card__bottom-right">
-            <div class="card__corner-value">A</div>
-            <img src="media/spades.svg" class="card__corner-suit">
+          <div class="card red">
+            <div class="card__top-left">
+              <div class="card__corner-value">3</div>
+              <img src="media/hearts.svg" class="card__corner-suit">
+            </div>
+            <div class="card__bottom-right">
+              <div class="card__corner-value">3</div>
+              <img src="media/hearts.svg" class="card__corner-suit">
+            </div>
           </div>
-        </div>
-        <div class="card red">
-          <div class="card__top-left">
-            <div class="card__corner-value">3</div>
-            <img src="media/hearts.svg" class="card__corner-suit">
-          </div>
-          <div class="card__bottom-right">
-            <div class="card__corner-value">3</div>
-            <img src="media/hearts.svg" class="card__corner-suit">
-          </div>
-        </div>
-        <div class="card red">
-          <div class="card__top-left">
-            <div class="card__corner-value">K</div>
-            <img src="media/diamonds.svg" class="card__corner-suit">
-          </div>
-          <div class="card__bottom-right">
-            <div class="card__corner-value">K</div>
-            <img src="media/diamonds.svg" class="card__corner-suit">
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="game__working-cloth">
-      <div class="game__working-cloth__piles">
-        <div class="pile">
-          <div class="card--face-down"></div>
-          <div class="card--face-down"></div>
           <div class="card red">
             <div class="card__top-left">
               <div class="card__corner-value">K</div>
@@ -67,21 +52,40 @@
             </div>
           </div>
         </div>
-        <div class="pile"></div>
-        <div class="pile"></div>
-        <div class="pile"></div>
-        <div class="pile"></div>
-        <div class="pile"></div>
-        <div class="pile"></div>
       </div>
-      <div class="game__working-cloth__game-controls"></div>
+      <div class="game__working-cloth">
+        <div class="game__working-cloth__piles">
+          <div class="pile">
+            <div class="card--face-down"></div>
+            <div class="card--face-down"></div>
+            <div class="card red">
+              <div class="card__top-left">
+                <div class="card__corner-value">K</div>
+                <img src="media/diamonds.svg" class="card__corner-suit">
+              </div>
+              <div class="card__bottom-right">
+                <div class="card__corner-value">K</div>
+                <img src="media/diamonds.svg" class="card__corner-suit">
+              </div>
+            </div>
+          </div>
+          <div class="pile"></div>
+          <div class="pile"></div>
+          <div class="pile"></div>
+          <div class="pile"></div>
+          <div class="pile"></div>
+          <div class="pile"></div>
+        </div>
+        <div class="game__working-cloth__game-controls"></div>
+      </div>
+      <div class="game__foundation-cloth">
+        <div class="card--suit-placeholder"></div>
+        <div class="card--suit-placeholder"></div>
+        <div class="card--suit-placeholder"></div>
+        <div class="card--suit-placeholder"></div>
+      </div>
     </div>
-    <div class="game__foundation-cloth">
-      <div class="card--suit-placeholder"></div>
-      <div class="card--suit-placeholder"></div>
-      <div class="card--suit-placeholder"></div>
-      <div class="card--suit-placeholder"></div>
-    </div>
+    <article></article>
   </main>
   <footer class="footer">
     <small>

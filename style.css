@@ -1,7 +1,7 @@
 /* http://getbem.com/naming/ */
 
 :root {
-  --card-size-multiplier: 1.33;
+  --card-size-common: 1.8;
 }
 
 * {
@@ -10,12 +10,49 @@
 
 body {
   margin: 0;
+  display: grid;
+}
+
+.header {
+  z-index: 0;
+  height: 3.4rem;
+  background-color: #585858;
+  box-shadow: 0 2pt 7pt rgba(0, 0, 0, 0.5);
+  display: grid;
+  grid-template-columns: 6rem 5rem auto;
+  place-items: center;
+  font-size: 1.5rem;
+  color: whitesmoke;
+}
+
+.header__title {
+  transform: translateX(1rem);
+}
+
+.header__icon {
+  height: 2.3rem;
+}
+
+.deck-surface {
+  background: linear-gradient(to bottom right, #6a4d3f, #725242);
+  height: 100vh;
 }
 
 .game {
+  --border-radius: 12px;
   display: grid;
-  grid-template-columns: 5rem 4fr 5rem;
-  grid-template-rows: 1;
+  grid-template-columns: 6rem 4fr 6rem;
+  margin: 22pt;
+  box-shadow: 5pt 5pt 10pt rgba(0, 0, 0, 0.5);
+  border-radius: var(--border-radius);
+}
+
+.game > div:first-child {
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
+}
+
+.game > div:last-child {
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
 .game__stock-cloth, .game__working-cloth, .game__foundation-cloth {
@@ -54,16 +91,16 @@ body {
 
 .card {
   background-color: #ffffff;
-  width: calc(2.5rem * var(--card-size-multiplier));
-  height: calc(3.5rem * var(--card-size-multiplier));
+  width: calc(2.5rem * var(--card-size-common));
+  height: calc(3.5rem * var(--card-size-common));
 }
 
 .card, .card--face-down, .deck {
   margin: 0.3rem;
   border-radius: 0.3125rem;
   box-shadow: 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.2);
-  width: calc(2.5rem * var(--card-size-multiplier));
-  height: calc(3.5rem * var(--card-size-multiplier));
+  width: calc(2.5rem * var(--card-size-common));
+  height: calc(3.5rem * var(--card-size-common));
 }
 
 .card--face-down, .deck {
@@ -81,18 +118,18 @@ body {
   position: relative;
   width: 40%;
   line-height: 100%;
-  font-size: 1.1em;
+  font-size: 1.3rem;
 }
 
 .card__top-left {
-  top: calc(0.3rem * var(--card-size-multiplier));
-  left: calc(0.05rem * var(--card-size-multiplier));
+  top: 0.5rem;
+  left: 0.065rem;
 }
 
 .card__bottom-right {
   transform: rotate(180deg);
-  bottom: calc(0.10526316rem * var(--card-size-multiplier));
-  right: calc(-1.41rem * var(--card-size-multiplier));
+  bottom: -0.5rem;
+  right: -2.65rem;
 }
 
 .card__corner-suit {
@@ -106,18 +143,38 @@ body {
 }
 
 .footer {
+  position: fixed;
+  bottom: 0;
+  padding: 11.5pt;
   background-color: #585858;
-  color: #ffffff;
 }
 
-.footer {
-  padding: 10pt;
-}
-
-.footer a:link {
-  color: white;
+.footer, .footer a:link {
+  color: whitesmoke;
 }
 
 .footer a:visited {
   color: rgb(200, 200, 200);
+}
+
+@media only screen and (max-width: 830px) {
+  .game__working-cloth__piles > * {
+    opacity: 0.5;
+  }
+
+  .game__working-cloth__piles::after {
+    position: absolute;
+    content: "Game window is too small.";
+    left: 50%;
+    transform: translateX(-50%);
+    color: whitesmoke;
+  }
+
+  .card, .card--face-down, .card--suit-placeholder, .deck {
+    display: none;
+  }
+
+  .game {
+    height: 10rem;
+  }
 }
