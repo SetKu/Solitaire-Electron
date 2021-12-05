@@ -95,7 +95,7 @@ body {
   height: calc(3.5rem * var(--card-size-common));
 }
 
-.card, .card--face-down, .deck {
+.card, .card--face-down, .card--suit-placeholder, .deck {
   margin: 0.3rem;
   border-radius: 0.3125rem;
   box-shadow: 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.2);
@@ -103,14 +103,14 @@ body {
   height: calc(3.5rem * var(--card-size-common));
 }
 
-.card--face-down, .deck {
+.card--face-down, .card--suit-placeholder, .deck {
   box-sizing: border-box;
   background-color: #27539b;
-  border: 0.18rem solid rgba(255, 255, 255, 0.1);
+  border: 0.27rem solid rgba(255, 255, 255, 0.1);
 }
 
 .deck {
-  border: 0.266rem solid rgba(255, 255, 255, 0.1);
+  border: 0.32rem solid rgba(255, 255, 255, 0.1);
 }
 
 .card__top-left, .card__bottom-right {
@@ -140,6 +140,15 @@ body {
 .pile .card, .pile .card--face-down {
   margin-left: auto;
   margin-right: auto;
+}
+
+.card--suit-placeholder img {
+  filter: grayscale(100%) drop-shadow(0 0 0.04rem rgba(0, 0, 0, 0.5));
+  position: relative;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2rem;
 }
 
 .footer {
