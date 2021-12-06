@@ -154,7 +154,8 @@ body {
 .footer {
   position: fixed;
   bottom: 0;
-  padding: 11.5pt;
+  width: 90vw;
+  padding: 1rem 5vw;
   background-color: #585858;
 }
 
