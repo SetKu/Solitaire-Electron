@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solitaire</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="shortcut icon" type="image" href="./favicon.ico">
+  <script src="../dist/main.js" type="module"></script>
+</head>
+
+<body>
+  <div class="header">
+    <div class="header__title">Solitaire</div>
+    <img src="./media/spades-playing-card-icon.svg" class="header__icon">
+  </div>
+  <main class="deck-surface">
+    <div class="game">
+      <div class="game__stock-cloth">
+        <div class="deck"></div>
+        <div class="game__stock-cloth__revealed-cards">
+          <div class="card">
+            <div class="card__top-left">
+              <div class="card__corner-value">A</div>
+              <img src="./media/spades.svg" class="card__corner-suit">
+            </div>
+            <div class="card__bottom-right">
+              <div class="card__corner-value">A</div>
+              <img src="./media/spades.svg" class="card__corner-suit">
+            </div>
+          </div>
+          <div class="card red">
+            <div class="card__top-left">
+              <div class="card__corner-value">3</div>
+              <img src="./media/hearts.svg" class="card__corner-suit">
+            </div>
+            <div class="card__bottom-right">
+              <div class="card__corner-value">3</div>
+              <img src="./media/hearts.svg" class="card__corner-suit">
+            </div>
+          </div>
+          <div class="card red">
+            <div class="card__top-left">
+              <div class="card__corner-value">K</div>
+              <img src="./media/diamonds.svg" class="card__corner-suit">
+            </div>
+            <div class="card__bottom-right">
+              <div class="card__corner-value">K</div>
+              <img src="./media/diamonds.svg" class="card__corner-suit">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="game__working-cloth">
+        <div class="game__working-cloth__piles">
+          <div class="pile">
+            <div class="card--face-down"></div>
+            <div class="card--face-down"></div>
+            <div class="card red">
+              <div class="card__top-left">
+                <div class="card__corner-value">K</div>
+                <img src="./media/diamonds.svg" class="card__corner-suit">
+              </div>
+              <div class="card__bottom-right">
+                <div class="card__corner-value">K</div>
+                <img src="./media/diamonds.svg" class="card__corner-suit">
+              </div>
+            </div>
+          </div>
+          <div class="pile"></div>
+          <div class="pile"></div>
+          <div class="pile"></div>
+          <div class="pile"></div>
+          <div class="pile"></div>
+          <div class="pile"></div>
+        </div>
+        <div class="game__working-cloth__game-controls"></div>
+      </div>
+      <div class="game__foundation-cloth">
+        <div class="card--suit-placeholder"><img src="./media/spades.svg"></div>
+        <div class="card--suit-placeholder"><img src="./media/clubs.svg"></div>
+        <div class="card--suit-placeholder"><img src="./media/hearts.svg"></div>
+        <div class="card--suit-placeholder"><img src="./media/diamonds.svg"></div>
+      </div>
+    </div>
+    <article></article>
+  </main>
+  <footer class="footer">
+    <small>
+      Playing card suit icons adapted from <a
+        href="https://commons.wikimedia.org/wiki/File:Anglo-American_card_suits.svg" target="_blank">Silsor's
+        Anglo-American card suits on Wikimedia</a> under the CC Attribution Share Alike 3.0 Unported license.
+    </small>
+  </footer>
+</body>
+
+</html>

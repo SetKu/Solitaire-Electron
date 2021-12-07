@@ -1,9 +1,23 @@
 {
   "dependencies": {
     "jquery": "^3.6.0",
-    "typescript": "^4.5.2"
+    "typescript": "^4.5.2",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "@types/jquery": "^3.5.9"
-  }
+    "@types/jquery": "^3.5.9",
+    "@types/node": "^16.11.11",
+    "webpack": "^5.65.0",
+    "webpack-cli": "^4.9.1"
+  },
+  "name": "solitaire",
+  "version": "0.0.8",
+  "main": "./src/script.js",
+  "scripts": {
+    "develop": "tsc & webpack ; fg",
+    "build": "webpack"
+  },
+  "author": "Zachary Morden",
+  "license": "MIT",
+  "description": ""
 }
