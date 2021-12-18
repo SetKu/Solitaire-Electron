@@ -143,7 +143,7 @@ body {
 }
 
 .card--suit-placeholder img {
-  filter: grayscale(100%) drop-shadow(0 0 0.04rem rgba(0, 0, 0, 0.5));
+  filter: brightness(0) drop-shadow(0 0 0.04rem rgba(0, 0, 0, 0.5)) opacity(0.8);
   position: relative;
   top: 50%;
   left: 50%;
@@ -168,10 +168,6 @@ body {
 }
 
 @media only screen and (max-width: 830px) {
-  .game__working-cloth__piles > * {
-    opacity: 0.5;
-  }
-
   .game__working-cloth__piles::after {
     position: absolute;
     content: "Game window is too small.";
