@@ -96,7 +96,7 @@ class State {
 
     this.stockRevealedCards.forEach((card) => {
       gameStockClothRevealedCards.html((_, oldHTML) => {
-        return oldHTML += card.html as string;
+        return oldHTML += card.html as string + "\n";
       });
     })
 
