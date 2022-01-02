@@ -1,12 +1,12 @@
 let uuid = require('uuid');
 /* Static Game Elements */
-var gameStockClothRevealedCards = $('.game__stock-cloth__revealed-cards');
-var gameWorkingClothPiles = $('.game__working-cloth__piles');
-var gameFoundationCloth = $('.game__foundation-cloth');
-var gameFoundationClothSpades = $('.game__foundation-cloth__spades');
-var gameFoundationClothClubs = $('.game__foundation-cloth__clubs');
-var gameFoundationClothHearts = $('.game__foundation-cloth__hearts');
-var gameFoundationClothDiamonds = $('.game__foundation-cloth__diamonds');
+var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
+var gameWorkingClothPiles = document.querySelector('.game__working-cloth__piles');
+var gameFoundationCloth = document.querySelector('.game__foundation-cloth');
+var gameFoundationClothSpades = document.querySelector('.game__foundation-cloth__spades');
+var gameFoundationClothClubs = document.querySelector('.game__foundation-cloth__clubs');
+var gameFoundationClothHearts = document.querySelector('.game__foundation-cloth__hearts');
+var gameFoundationClothDiamonds = document.querySelector('.game__foundation-cloth__diamonds');
 /* Data Model */
 var SuitColors;
 (function (SuitColors) {
@@ -64,23 +64,32 @@ class State {
         };
     }
     forceUpdateUI() {
-        gameStockClothRevealedCards.empty();
+        gameStockClothRevealedCards.innerHTML = "";
         this.stockRevealedCards.forEach((card) => {
-            gameStockClothRevealedCards.html((_, oldHTML) => {
-                return oldHTML += card.html;
-            });
+            gameStockClothRevealedCards.innerHTML += card.html + "\n";
         });
-        for (const key in this.foundationDecks) {
-            if (this.foundationDecks[key].length != 0) {
-                foundationDeckParentFor(key).html(this.foundationDecks[key][this.foundationDecks[key].length - 1].html);
-            }
-            else {
-                foundationDeckParentFor(key).html(SuitPlaceholder[key]);
+        for (let i = 0; i < 7; i++) {
+            const pile = gameWorkingClothPiles.children[i];
+            pile.innerHTML = "";
+            const cards = this.workingPiles[i];
+            for (let i = 0; i < cards.length; i++) {
+                if (i == cards.length - 1) {
+                    pile.innerHTML += cards[i].html;
+                }
+                else {
+                    pile.innerHTML += Card.faceDownHTML;
+                }
             }
         }
-    }
-    resetUI() {
-        gameFoundationCloth.html();
+        styleAllPiles();
+        for (const key in this.foundationDecks) {
+            if (this.foundationDecks[key].length != 0) {
+                foundationDeckParentFor(key).innerHTML = this.foundationDecks[key][this.foundationDecks[key].length - 1].innerHTML;
+            }
+            else {
+                foundationDeckParentFor(key).innerHTML = SuitPlaceholder[key];
+            }
+        }
     }
 }
 class Deck {
@@ -135,6 +144,7 @@ class Card {
         }
     }
 }
+Card.faceDownHTML = `<div class="card--face-down"></div>`;
 class SuitPlaceholder {
     constructor(suit) {
         this.suit = suit;
@@ -183,6 +193,4 @@ let state = new Proxy(_state, {
         return true;
     }
 });
-/*
-  TODO: Function to move cards.
-*/ 
+export {};

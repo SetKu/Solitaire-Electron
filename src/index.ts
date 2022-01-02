@@ -1,14 +1,16 @@
+import { createDeflate } from "zlib";
+
 let uuid = require('uuid');
 
 /* Static Game Elements */
 
-var gameStockClothRevealedCards = $('.game__stock-cloth__revealed-cards');
-var gameWorkingClothPiles = $('.game__working-cloth__piles');
-var gameFoundationCloth = $('.game__foundation-cloth');
-var gameFoundationClothSpades = $('.game__foundation-cloth__spades');
-var gameFoundationClothClubs = $('.game__foundation-cloth__clubs');
-var gameFoundationClothHearts = $('.game__foundation-cloth__hearts');
-var gameFoundationClothDiamonds = $('.game__foundation-cloth__diamonds');
+var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
+var gameWorkingClothPiles = document.querySelector('.game__working-cloth__piles');
+var gameFoundationCloth = document.querySelector('.game__foundation-cloth');
+var gameFoundationClothSpades = document.querySelector('.game__foundation-cloth__spades');
+var gameFoundationClothClubs = document.querySelector('.game__foundation-cloth__clubs');
+var gameFoundationClothHearts = document.querySelector('.game__foundation-cloth__hearts');
+var gameFoundationClothDiamonds = document.querySelector('.game__foundation-cloth__diamonds');
 
 /* Data Model */
 
@@ -45,21 +47,17 @@ enum Values {
   king = "K"
 }
 
-type Pile = Array<Card>;
-
 class State {
 
   stockDeck: Deck;
   stockRevealedCards: Array<Card>;
-  workingPiles: Array<Pile>;
+  workingPiles: Array<Array<Card>>;
   foundationDecks: {
     spades: Array<Card>,
     clubs: Array<Card>,
     hearts: Array<Card>,
     diamonds: Array<Card>
   };
-
-  watchChanges: false;
 
   constructor() {
     this.resetState();
@@ -69,7 +67,7 @@ class State {
     this.stockDeck = Deck.newDeck().shuffled();
     this.stockRevealedCards = [];
 
-    let workingPiles: Array<Pile> = [];
+    let workingPiles: Array<Array<Card>> = [];
 
     for (let iA = 1; iA < 8; iA++) {
       var pile = [];
@@ -92,25 +90,35 @@ class State {
   }
 
   forceUpdateUI() {
-    gameStockClothRevealedCards.empty();
+    gameStockClothRevealedCards.innerHTML = "";
 
     this.stockRevealedCards.forEach((card) => {
-      gameStockClothRevealedCards.html((_, oldHTML) => {
-        return oldHTML += card.html as string + "\n";
-      });
+      gameStockClothRevealedCards.innerHTML += card.html + "\n";
     })
+
+    for (let i = 0; i < 7; i++) {
+      const pile = gameWorkingClothPiles.children[i];
+      pile.innerHTML = "";
+
+      const cards = this.workingPiles[i];
+      for (let i = 0; i < cards.length; i++) {
+        if (i == cards.length - 1) {
+          pile.innerHTML += cards[i].html;
+        } else {
+          pile.innerHTML += Card.faceDownHTML;
+        }
+      }
+    }
+
+    styleAllPiles();
 
     for (const key in this.foundationDecks) {
       if (this.foundationDecks[key].length != 0) {
-        foundationDeckParentFor(key).html(this.foundationDecks[key][this.foundationDecks[key].length - 1].html as string);
+        foundationDeckParentFor(key).innerHTML = this.foundationDecks[key][this.foundationDecks[key].length - 1].innerHTML;
       } else {
-        foundationDeckParentFor(key).html(SuitPlaceholder[key]);
+        foundationDeckParentFor(key).innerHTML = SuitPlaceholder[key];
       }
     }
-  }
-
-  resetUI() {
-    gameFoundationCloth.html();
   }
 }
 
@@ -179,6 +187,8 @@ class Card {
         return SuitColors.red;
     }
   }
+
+  static faceDownHTML = `<div class="card--face-down"></div>`
 }
 
 class SuitPlaceholder {
@@ -200,7 +210,7 @@ class SuitPlaceholder {
   }
 }
 
-function foundationDeckParentFor(key: String): JQuery<HTMLElement> {
+function foundationDeckParentFor(key: String): Element {
   switch (key) {
     case "spades":
       return gameFoundationClothSpades;
@@ -243,7 +253,3 @@ let state = new Proxy(_state, {
     return true;
   }
 });
-
-/*
-  TODO: Function to move cards.
-*/
