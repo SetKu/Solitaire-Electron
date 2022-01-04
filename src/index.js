@@ -35,10 +35,27 @@ var Values;
     Values["queen"] = "Q";
     Values["king"] = "K";
 })(Values || (Values = {}));
+var CardPositions;
+(function (CardPositions) {
+    CardPositions[CardPositions["stockDeck"] = 0] = "stockDeck";
+    CardPositions[CardPositions["stockRevealedCards"] = 1] = "stockRevealedCards";
+    CardPositions[CardPositions["workingPileOne"] = 2] = "workingPileOne";
+    CardPositions[CardPositions["workingPileTwo"] = 3] = "workingPileTwo";
+    CardPositions[CardPositions["workingPileThree"] = 4] = "workingPileThree";
+    CardPositions[CardPositions["workingPileFour"] = 5] = "workingPileFour";
+    CardPositions[CardPositions["workingPileFive"] = 6] = "workingPileFive";
+    CardPositions[CardPositions["workingPileSix"] = 7] = "workingPileSix";
+    CardPositions[CardPositions["workingPileSeven"] = 8] = "workingPileSeven";
+    CardPositions[CardPositions["foundationDeckSpades"] = 9] = "foundationDeckSpades";
+    CardPositions[CardPositions["foundationDeckClubs"] = 10] = "foundationDeckClubs";
+    CardPositions[CardPositions["foundationDeckHearts"] = 11] = "foundationDeckHearts";
+    CardPositions[CardPositions["foundationDeckDiamonds"] = 12] = "foundationDeckDiamonds";
+})(CardPositions || (CardPositions = {}));
 class Card {
-    constructor(suit, value) {
+    constructor(suit, value, position = undefined) {
         this.suit = suit;
         this.value = value;
+        this.position = position;
         this.id = uuid.v4();
     }
     get html() {
@@ -72,7 +89,7 @@ class Deck {
         this.cards = cards;
     }
     shuffled() {
-        for (var i = this.cards.length - 1; i > 0; i--) {
+        for (var i = this.cards.length - 1; i < 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
         }
@@ -82,7 +99,7 @@ class Deck {
         let cards = [];
         for (const suit of Object.values(Suits)) {
             for (const value of Object.values(Values)) {
-                cards.push(new Card(suit, value));
+                cards.push(new Card(suit, value, CardPositions.stockDeck));
             }
         }
         return new Deck(cards);
@@ -119,12 +136,18 @@ class State {
     }
     resetState() {
         this.stockDeck = Deck.newDeck().shuffled();
+        this.referenceCards = [];
+        for (const card of this.stockDeck.cards) {
+            const reference = card;
+            this.referenceCards.push(reference);
+        }
         this.stockRevealedCards = [];
         let workingPiles = [];
         for (let iA = 1; iA < 8; iA++) {
             var pile = [];
             for (let iB = 0; iB < iA; iB++) {
-                pile.push(this.stockDeck.cards.pop());
+                let card = this.stockDeck.cards.pop();
+                pile.push(card);
             }
             workingPiles.push(pile);
         }
@@ -187,13 +210,22 @@ function styleAllPiles() {
     }
 }
 function clearFoundationDecksContent() {
-    let successful = false;
+    let successful = true;
     for (let i = 0; i < gameFoundationCloth.children.length; i++) {
         gameFoundationCloth.children[i].replaceChildren();
-        if (gameFoundationCloth.children[i].children.length == 0) {
-            successful = true;
+        if (gameFoundationCloth.children[i].children.length != 0) {
+            successful = false;
         }
         ;
     }
     return successful;
+}
+function isCardMoveValid(cardID, destination) {
+    switch (destination) {
+        case CardPositions.stockDeck:
+            return false;
+        case CardPositions.stockRevealedCards:
+            return false;
+        case CardPositions.workingPileOne:
+    }
 }

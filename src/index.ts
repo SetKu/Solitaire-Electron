@@ -1,7 +1,7 @@
 let uuid = require('uuid');
 //The TS compiler knows node's require function will return the any type with the help of the npm @types/node package.
 
-/* Static Game Elements */
+/*** Static Game Elements ***/
 
 var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
@@ -12,7 +12,7 @@ var gameFoundationClothClubs = document.querySelector('.game__foundation-cloth__
 var gameFoundationClothHearts = document.querySelector('.game__foundation-cloth__hearts');
 var gameFoundationClothDiamonds = document.querySelector('.game__foundation-cloth__diamonds');
 
-/* Data Model */
+/*** Data Model ***/
 
 enum SuitColors {
   black = "black",
@@ -47,14 +47,20 @@ enum Values {
   king = "K"
 }
 
+enum CardPositions {
+  stockDeck, stockRevealedCards, workingPileOne, workingPileTwo, workingPileThree, workingPileFour, workingPileFive, workingPileSix, workingPileSeven, foundationDeckSpades, foundationDeckClubs, foundationDeckHearts, foundationDeckDiamonds
+}
+
 class Card {
   suit: String;
   value: String;
   id: String;
+  position: CardPositions;
 
-  constructor(suit: String, value: String) {
+  constructor(suit: String, value: String, position: CardPositions = undefined) {
     this.suit = suit;
     this.value = value;
+    this.position = position;
     this.id = uuid.v4();
   }
 
@@ -99,7 +105,7 @@ class Deck {
   }
 
   shuffled(): Deck {
-    for (var i = this.cards.length - 1; i > 0; i--) {
+    for (var i = this.cards.length - 1; i < 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
     }
@@ -112,7 +118,7 @@ class Deck {
 
     for (const suit of Object.values(Suits)) {
       for (const value of Object.values(Values)) {
-        cards.push(new Card(suit, value));
+        cards.push(new Card(suit, value, CardPositions.stockDeck));
       }
     }
 
@@ -151,6 +157,8 @@ function foundationDeckParentFor(key: String): Element {
 }
 
 class State {
+  referenceCards: Array<Card>;
+
   stockDeck: Deck;
   stockRevealedCards: Array<Card>;
   workingPiles: Array<Array<Card>>;
@@ -168,6 +176,14 @@ class State {
 
   resetState() {
     this.stockDeck = Deck.newDeck().shuffled();
+
+    this.referenceCards = [];
+
+    for (const card of this.stockDeck.cards) {
+      const reference = card;
+      this.referenceCards.push(reference);
+    }
+
     this.stockRevealedCards = [];
 
     let workingPiles: Array<Array<Card>> = [];
@@ -176,7 +192,9 @@ class State {
       var pile = [];
 
       for (let iB = 0; iB < iA; iB++) {
-        pile.push(this.stockDeck.cards.pop());
+        let card = this.stockDeck.cards.pop()
+
+        pile.push(card);
       }
 
       workingPiles.push(pile);
@@ -235,7 +253,7 @@ let state = new Proxy(_state, {
   }
 });
 
-/* Functional Runtime Code */
+/*** Functional Runtime Code ***/
 
 function styleAllPiles() {
   const piles = document.getElementsByClassName("pile");
@@ -255,14 +273,63 @@ function styleAllPiles() {
 }
 
 function clearFoundationDecksContent(): boolean {
-  let successful = false;
+  let successful = true;
 
   for (let i = 0; i < gameFoundationCloth.children.length; i++) {
     gameFoundationCloth.children[i].replaceChildren();
-    if (gameFoundationCloth.children[i].children.length == 0) {
-      successful = true;
+    if (gameFoundationCloth.children[i].children.length != 0) {
+      successful = false;
     };
   }
 
   return successful;
+}
+
+/** Game Logic **/
+
+//   stockDeck: Deck;
+//   stockRevealedCards: Array<Card>;
+//   workingPiles: Array<Array<Card>>;
+//   foundationDecks: {
+//     spades: Array<Card>,
+//     clubs: Array<Card>,
+//     hearts: Array<Card>,
+//     diamonds: Array<Card>
+//   };
+
+function cardWithId(id: String): Card {
+  for (const card of state.stockDeck.cards) {
+    if (card.id === id) return card;
+  }
+
+  for (const card of state.stockRevealedCards) {
+    if (card.id === id) return card;
+  }
+
+  for (const pile of state.workingPiles) {
+    for (const card of pile) {
+      if (card.id === id) return card;
+    }
+  }
+
+  for (const key in state.foundationDecks) {
+    for (const card of state.foundationDecks[key]) {
+      if (card.id === id) return card;
+    }
+  }
+
+  throw new Error("Unable to find card specified by id: " + id);
+}
+
+function isCardMoveValid(cardId: String, destination: CardPositions): boolean {
+  const card = cardWithId(cardId);
+
+  switch (destination) {
+    case CardPositions.stockDeck:
+      return false;
+    case CardPositions.stockRevealedCards:
+      return false;
+    case CardPositions.workingPileOne:
+
+  }
 }
