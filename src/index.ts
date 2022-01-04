@@ -1,9 +1,9 @@
-import { createDeflate } from "zlib";
-
 let uuid = require('uuid');
+//The TS compiler knows node's require function will return the any type with the help of the npm @types/node package.
 
 /* Static Game Elements */
 
+var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
 var gameWorkingClothPiles = document.querySelector('.game__working-cloth__piles');
 var gameFoundationCloth = document.querySelector('.game__foundation-cloth');
@@ -47,79 +47,48 @@ enum Values {
   king = "K"
 }
 
-class State {
+class Card {
+  suit: String;
+  value: String;
+  id: String;
 
-  stockDeck: Deck;
-  stockRevealedCards: Array<Card>;
-  workingPiles: Array<Array<Card>>;
-  foundationDecks: {
-    spades: Array<Card>,
-    clubs: Array<Card>,
-    hearts: Array<Card>,
-    diamonds: Array<Card>
-  };
-
-  constructor() {
-    this.resetState();
+  constructor(suit: String, value: String) {
+    this.suit = suit;
+    this.value = value;
+    this.id = uuid.v4();
   }
 
-  resetState() {
-    this.stockDeck = Deck.newDeck().shuffled();
-    this.stockRevealedCards = [];
-
-    let workingPiles: Array<Array<Card>> = [];
-
-    for (let iA = 1; iA < 8; iA++) {
-      var pile = [];
-
-      for (let iB = 0; iB < iA; iB++) {
-        pile.push(this.stockDeck.cards.pop());
-      }
-
-      workingPiles.push(pile);
-    }
-
-    this.workingPiles = workingPiles;
-
-    this.foundationDecks = {
-      spades: new Array<Card>(),
-      clubs: new Array<Card>(),
-      hearts: new Array<Card>(),
-      diamonds: new Array<Card>()
-    };
+  /*
+  * HTML structuring for cards adapted from code examples shown in a Medium post by Juha Lindstedt.
+  * Lindstedt, Juda. (2018, November 6). "JavaScript Playing Cards Part 2: Graphics." Medium. Retrieved November 26, 2021 from https://medium.com/@pakastin/javascript-playing-cards-part-2-graphics-cd65d331ad00.
+  */
+  get html(): String {
+    return `<div class="card ${this.cardColor}" id="${this.id}">
+      <div class="card__top-left">
+        <div class="card__corner-value">${this.value}</div>
+        <img src="./media/${this.suit}.svg" class="card__corner-suit">
+      </div>
+      <div class="card__bottom-right">
+        <div class="card__corner-value">${this.value}</div>
+        <img src="./media/${this.suit}.svg" class="card__corner-suit">
+      </div>
+    </div>`;
   }
 
-  forceUpdateUI() {
-    gameStockClothRevealedCards.innerHTML = "";
-
-    this.stockRevealedCards.forEach((card) => {
-      gameStockClothRevealedCards.innerHTML += card.html + "\n";
-    })
-
-    for (let i = 0; i < 7; i++) {
-      const pile = gameWorkingClothPiles.children[i];
-      pile.innerHTML = "";
-
-      const cards = this.workingPiles[i];
-      for (let i = 0; i < cards.length; i++) {
-        if (i == cards.length - 1) {
-          pile.innerHTML += cards[i].html;
-        } else {
-          pile.innerHTML += Card.faceDownHTML;
-        }
-      }
-    }
-
-    styleAllPiles();
-
-    for (const key in this.foundationDecks) {
-      if (this.foundationDecks[key].length != 0) {
-        foundationDeckParentFor(key).innerHTML = this.foundationDecks[key][this.foundationDecks[key].length - 1].innerHTML;
-      } else {
-        foundationDeckParentFor(key).innerHTML = SuitPlaceholder[key];
-      }
+  get cardColor(): String {
+    switch (this.suit) {
+      case Suits.spades:
+        return SuitColors.black;
+      case Suits.clubs:
+        return SuitColors.black;
+      case Suits.diamonds:
+        return SuitColors.red;
+      case Suits.hearts:
+        return SuitColors.red;
     }
   }
+
+  static faceDownHTML = `<div class="card--face-down"></div>`
 }
 
 class Deck {
@@ -151,49 +120,8 @@ class Deck {
   }
 }
 
-class Card {
-  suit: String;
-  value: String;
-  id: String;
-
-  constructor(suit: String, value: String) {
-    this.suit = suit;
-    this.value = value;
-    this.id = uuid.v4();
-  }
-
-  /*
-  * HTML structuring for cards adapted from code examples shown in a Medium post by Juha Lindstedt.
-  * Lindstedt, Juda. (2018, November 6). "JavaScript Playing Cards Part 2: Graphics." Medium. Retrieved November 26, 2021 from https://medium.com/@pakastin/javascript-playing-cards-part-2-graphics-cd65d331ad00.
-  */
-  get html(): String {
-    return `<div class="card ${this.cardColor}" id="${this.id}">
-      <div class="card__top-left">
-        <div class="card__corner-value">${this.value}</div>
-        <img src="./media/${this.suit}.svg" class="card__corner-suit">
-      </div>
-      <div class="card__bottom-right">
-        <div class="card__corner-value">${this.value}</div>
-        <img src="./media/${this.suit}.svg" class="card__corner-suit">
-      </div>
-    </div>`;
-  }
-
-  get cardColor(): String {
-    switch (this.suit) {
-      case Suits.spades || Suits.clubs:
-        return SuitColors.black;
-      case Suits.diamonds || Suits.hearts:
-        return SuitColors.red;
-    }
-  }
-
-  static faceDownHTML = `<div class="card--face-down"></div>`
-}
-
 class SuitPlaceholder {
-  suit: String
-  id: String
+  suit: String;
 
   static spades = new SuitPlaceholder(Suits.spades);
   static clubs = new SuitPlaceholder(Suits.clubs);
@@ -202,7 +130,6 @@ class SuitPlaceholder {
 
   constructor(suit: String) {
     this.suit = suit
-    this.id = uuid.v4();
   }
 
   get html(): String {
@@ -223,28 +150,82 @@ function foundationDeckParentFor(key: String): Element {
   }
 }
 
-/* Functional Code */
+class State {
+  stockDeck: Deck;
+  stockRevealedCards: Array<Card>;
+  workingPiles: Array<Array<Card>>;
+  foundationDecks: {
+    spades: Array<Card>,
+    clubs: Array<Card>,
+    hearts: Array<Card>,
+    diamonds: Array<Card>
+  };
 
-function styleAllPiles() {
-  const piles = document.getElementsByClassName("pile");
-  const offsetStart = 5.5;
+  constructor() {
+    this.resetState();
+    this.forceUpdateUI();
+  }
 
-  for (let i = 0; i < piles.length; i++) {
-    let element = piles.item(i);
+  resetState() {
+    this.stockDeck = Deck.newDeck().shuffled();
+    this.stockRevealedCards = [];
 
-    for (let i = 0; i < element.children.length; i++) {
-      let child = element.children[i];
+    let workingPiles: Array<Array<Card>> = [];
 
-      if (i == 0) {
-        continue;
+    for (let iA = 1; iA < 8; iA++) {
+      var pile = [];
+
+      for (let iB = 0; iB < iA; iB++) {
+        pile.push(this.stockDeck.cards.pop());
       }
 
-      child.setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
+      workingPiles.push(pile);
+    }
+
+    this.workingPiles = workingPiles;
+
+    this.foundationDecks = {
+      spades: new Array<Card>(),
+      clubs: new Array<Card>(),
+      hearts: new Array<Card>(),
+      diamonds: new Array<Card>()
+    };
+  }
+
+  forceUpdateUI() {
+    gameStockClothRevealedCards.replaceChildren();
+
+    this.stockRevealedCards.forEach((card) => {
+      gameStockClothRevealedCards.innerHTML += card.html + "\n";
+    })
+
+    for (let i = 0; i < 7; i++) {
+      const pile = gameWorkingClothPiles.children[i];
+      pile.innerHTML = "";
+
+      const cards = this.workingPiles[i];
+      for (let i = 0; i < cards.length; i++) {
+        if (i == cards.length - 1) {
+          pile.innerHTML += cards[i].html;
+        } else {
+          pile.innerHTML += Card.faceDownHTML;
+        }
+      }
+    }
+
+    styleAllPiles();
+
+    clearFoundationDecksContent();
+
+    for (const key in this.foundationDecks) {
+      if (this.foundationDecks[key].length != 0) {
+        foundationDeckParentFor(key).innerHTML = this.foundationDecks[key][this.foundationDecks[key].length - 1].html;
+      } else {
+        foundationDeckParentFor(key).innerHTML = SuitPlaceholder[key].html;
+      }
     }
   }
 }
-
-styleAllPiles();
 
 let _state = new State();
 let state = new Proxy(_state, {
@@ -253,3 +234,35 @@ let state = new Proxy(_state, {
     return true;
   }
 });
+
+/* Functional Runtime Code */
+
+function styleAllPiles() {
+  const piles = document.getElementsByClassName("pile");
+  const offsetStart = 5.5;
+
+  for (let i = 0; i < piles.length; i++) {
+    if (i == 0) {
+      continue;
+    }
+
+    let pile = piles.item(i);
+
+    for (let i = 0; i < pile.children.length; i++) {
+      pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
+    }
+  }
+}
+
+function clearFoundationDecksContent(): boolean {
+  let successful = false;
+
+  for (let i = 0; i < gameFoundationCloth.children.length; i++) {
+    gameFoundationCloth.children[i].replaceChildren();
+    if (gameFoundationCloth.children[i].children.length == 0) {
+      successful = true;
+    };
+  }
+
+  return successful;
+}

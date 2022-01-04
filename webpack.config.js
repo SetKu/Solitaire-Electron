@@ -1,4 +1,7 @@
 module.exports = {
   mode: "development",
-  watch: true
+  watch: true,
+  watchOptions: {
+    poll: true
+  }
 }

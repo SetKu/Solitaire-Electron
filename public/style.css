@@ -2,6 +2,7 @@
 
 :root {
   --card-size-common: 1.8;
+  --game-max-height: 28.4rem;
 }
 
 * {
@@ -56,7 +57,11 @@ body {
 }
 
 .game__stock-cloth, .game__working-cloth, .game__foundation-cloth {
-  display: grid; 
+  display: grid;
+}
+
+.game__stock-cloth, .game__working-cloth, .game__foundation-cloth, .pile {
+  max-height: var(--game-max-height);
 }
 
 .game__stock-cloth, .game__foundation-cloth {
@@ -65,8 +70,11 @@ body {
 
 .game__stock-cloth, .game__foundation-cloth {
   padding: 0.4em 0;
-  grid-template-columns: 1;
   place-items: center;
+}
+
+.game__stock-cloth {
+  grid-template-rows: repeat(4, 1fr);
 }
 
 .game__stock-cloth__revealed-cards {
@@ -75,8 +83,6 @@ body {
 
 .game__working-cloth {
   background-color: #297817;
-  display: grid;
-  grid-template-columns: 1;
 }
 
 .game__working-cloth__piles {
