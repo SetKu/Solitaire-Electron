@@ -190,3 +190,9 @@ body {
     height: 10rem;
   }
 }
+
+@media only screen and (min-width: 1300px) {
+  .pile {
+    transform: scale(1.15) translateY(2.25rem);
+  }
+}
