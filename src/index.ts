@@ -47,20 +47,14 @@ enum Values {
   king = "K"
 }
 
-enum CardPositions {
-  stockDeck, stockRevealedCards, workingPileOne, workingPileTwo, workingPileThree, workingPileFour, workingPileFive, workingPileSix, workingPileSeven, foundationDeckSpades, foundationDeckClubs, foundationDeckHearts, foundationDeckDiamonds
-}
-
 class Card {
   suit: String;
   value: String;
   id: String;
-  position: CardPositions;
 
-  constructor(suit: String, value: String, position: CardPositions = undefined) {
+  constructor(suit: String, value: String) {
     this.suit = suit;
     this.value = value;
-    this.position = position;
     this.id = uuid.v4();
   }
 
@@ -105,9 +99,10 @@ class Deck {
   }
 
   shuffled(): Deck {
-    for (var i = this.cards.length - 1; i < 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+    // Fisher-Yates Algorithm implementation.
+    for (var a = this.cards.length - 1; a > 0; a--) {
+      const b = Math.floor(Math.random() * (a + 1));
+      [this.cards[a], this.cards[b]] = [this.cards[b], this.cards[a]];
     }
 
     return this
@@ -118,7 +113,7 @@ class Deck {
 
     for (const suit of Object.values(Suits)) {
       for (const value of Object.values(Values)) {
-        cards.push(new Card(suit, value, CardPositions.stockDeck));
+        cards.push(new Card(suit, value));
       }
     }
 
@@ -169,8 +164,10 @@ class State {
     diamonds: Array<Card>
   };
 
-  constructor() {
+  constructor(silent: boolean = false) {
     this.resetState();
+
+    if (silent) return;
     this.forceUpdateUI();
   }
 
@@ -245,7 +242,7 @@ class State {
   }
 }
 
-let _state = new State();
+let _state = new State(true);
 let state = new Proxy(_state, {
   set: (object, prop, value) => {
     object[prop] = value;
@@ -287,17 +284,7 @@ function clearFoundationDecksContent(): boolean {
 
 /** Game Logic **/
 
-//   stockDeck: Deck;
-//   stockRevealedCards: Array<Card>;
-//   workingPiles: Array<Array<Card>>;
-//   foundationDecks: {
-//     spades: Array<Card>,
-//     clubs: Array<Card>,
-//     hearts: Array<Card>,
-//     diamonds: Array<Card>
-//   };
-
-function cardWithId(id: String): Card {
+function cardWith(id: String): Card {
   for (const card of state.stockDeck.cards) {
     if (card.id === id) return card;
   }
@@ -321,15 +308,4 @@ function cardWithId(id: String): Card {
   throw new Error("Unable to find card specified by id: " + id);
 }
 
-function isCardMoveValid(cardId: String, destination: CardPositions): boolean {
-  const card = cardWithId(cardId);
-
-  switch (destination) {
-    case CardPositions.stockDeck:
-      return false;
-    case CardPositions.stockRevealedCards:
-      return false;
-    case CardPositions.workingPileOne:
-
-  }
-}
+/** Drag and Drop Implementation **/

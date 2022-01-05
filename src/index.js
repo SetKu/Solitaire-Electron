@@ -35,27 +35,10 @@ var Values;
     Values["queen"] = "Q";
     Values["king"] = "K";
 })(Values || (Values = {}));
-var CardPositions;
-(function (CardPositions) {
-    CardPositions[CardPositions["stockDeck"] = 0] = "stockDeck";
-    CardPositions[CardPositions["stockRevealedCards"] = 1] = "stockRevealedCards";
-    CardPositions[CardPositions["workingPileOne"] = 2] = "workingPileOne";
-    CardPositions[CardPositions["workingPileTwo"] = 3] = "workingPileTwo";
-    CardPositions[CardPositions["workingPileThree"] = 4] = "workingPileThree";
-    CardPositions[CardPositions["workingPileFour"] = 5] = "workingPileFour";
-    CardPositions[CardPositions["workingPileFive"] = 6] = "workingPileFive";
-    CardPositions[CardPositions["workingPileSix"] = 7] = "workingPileSix";
-    CardPositions[CardPositions["workingPileSeven"] = 8] = "workingPileSeven";
-    CardPositions[CardPositions["foundationDeckSpades"] = 9] = "foundationDeckSpades";
-    CardPositions[CardPositions["foundationDeckClubs"] = 10] = "foundationDeckClubs";
-    CardPositions[CardPositions["foundationDeckHearts"] = 11] = "foundationDeckHearts";
-    CardPositions[CardPositions["foundationDeckDiamonds"] = 12] = "foundationDeckDiamonds";
-})(CardPositions || (CardPositions = {}));
 class Card {
-    constructor(suit, value, position = undefined) {
+    constructor(suit, value) {
         this.suit = suit;
         this.value = value;
-        this.position = position;
         this.id = uuid.v4();
     }
     get html() {
@@ -89,9 +72,9 @@ class Deck {
         this.cards = cards;
     }
     shuffled() {
-        for (var i = this.cards.length - 1; i < 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+        for (var a = this.cards.length - 1; a > 0; a--) {
+            const b = Math.floor(Math.random() * (a + 1));
+            [this.cards[a], this.cards[b]] = [this.cards[b], this.cards[a]];
         }
         return this;
     }
@@ -99,7 +82,7 @@ class Deck {
         let cards = [];
         for (const suit of Object.values(Suits)) {
             for (const value of Object.values(Values)) {
-                cards.push(new Card(suit, value, CardPositions.stockDeck));
+                cards.push(new Card(suit, value));
             }
         }
         return new Deck(cards);
@@ -130,8 +113,10 @@ function foundationDeckParentFor(key) {
     }
 }
 class State {
-    constructor() {
+    constructor(silent = false) {
         this.resetState();
+        if (silent)
+            return;
         this.forceUpdateUI();
     }
     resetState() {
@@ -189,7 +174,7 @@ class State {
         }
     }
 }
-let _state = new State();
+let _state = new State(true);
 let state = new Proxy(_state, {
     set: (object, prop, value) => {
         object[prop] = value;
@@ -220,12 +205,26 @@ function clearFoundationDecksContent() {
     }
     return successful;
 }
-function isCardMoveValid(cardID, destination) {
-    switch (destination) {
-        case CardPositions.stockDeck:
-            return false;
-        case CardPositions.stockRevealedCards:
-            return false;
-        case CardPositions.workingPileOne:
+function cardWith(id) {
+    for (const card of state.stockDeck.cards) {
+        if (card.id === id)
+            return card;
     }
+    for (const card of state.stockRevealedCards) {
+        if (card.id === id)
+            return card;
+    }
+    for (const pile of state.workingPiles) {
+        for (const card of pile) {
+            if (card.id === id)
+                return card;
+        }
+    }
+    for (const key in state.foundationDecks) {
+        for (const card of state.foundationDecks[key]) {
+            if (card.id === id)
+                return card;
+        }
+    }
+    throw new Error("Unable to find card specified by id: " + id);
 }
