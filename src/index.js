@@ -1,5 +1,6 @@
 let uuid = require('uuid');
 var gameStockCloth = document.querySelector(".game__stock-cloth");
+var gameStockClothDeck = document.querySelector(".deck");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
 var gameWorkingClothPiles = document.querySelector('.game__working-cloth__piles');
 var gameFoundationCloth = document.querySelector('.game__foundation-cloth');
@@ -42,7 +43,7 @@ class Card {
         this.id = uuid.v4();
     }
     get html() {
-        return `<div class="card ${this.cardColor}" id="${this.id}">
+        return `<div class="card ${this.cardColor}" id="${this.id}" draggable="${this.draggable}">
       <div class="card__top-left">
         <div class="card__corner-value">${this.value}</div>
         <img src="./media/${this.suit}.svg" class="card__corner-suit">
@@ -166,7 +167,9 @@ class State {
         clearFoundationDecksContent();
         for (const key in this.foundationDecks) {
             if (this.foundationDecks[key].length != 0) {
-                foundationDeckParentFor(key).innerHTML = this.foundationDecks[key][this.foundationDecks[key].length - 1].html;
+                let topCard = this.foundationDecks[key][this.foundationDecks[key].length - 1];
+                topCard.draggable = false;
+                foundationDeckParentFor(key).innerHTML = topCard.html;
             }
             else {
                 foundationDeckParentFor(key).innerHTML = SuitPlaceholder[key].html;
@@ -174,7 +177,7 @@ class State {
         }
     }
 }
-let _state = new State(true);
+let _state = new State();
 let state = new Proxy(_state, {
     set: (object, prop, value) => {
         object[prop] = value;
@@ -228,3 +231,15 @@ function cardWith(id) {
     }
     throw new Error("Unable to find card specified by id: " + id);
 }
+gameStockClothDeck.addEventListener("click", (event) => {
+    const sRC = state.stockRevealedCards;
+    const sDC = state.stockDeck.cards;
+    if (sRC.length < 3) {
+        sRC.unshift(sDC.pop());
+    }
+    else {
+        sDC.unshift(sRC.pop());
+        sRC.unshift(sDC.pop());
+    }
+    state.forceUpdateUI();
+});
