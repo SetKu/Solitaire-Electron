@@ -50,14 +50,18 @@ enum Values {
   king = "K"
 }
 
+enum GamePositions {
+  stockRevealedCards, workingPile0, workingPile1, workingPile2, workingPile3, workingPile4, workingPile5, workingPile6, foundationDeckSpades, foundationDeckClubs, foundationDeckHearts, foundationDeckDiamonds
+}
+
 class Card {
-  suit: String;
-  value: String;
-  id: String;
+  suit: string;
+  value: string;
+  id: string;
   draggable: boolean = true;
   dropTarget: boolean = false;
 
-  constructor(suit: String, value: String) {
+  constructor(suit: string, value: string) {
     this.suit = suit;
     this.value = value;
     this.id = uuid.v4();
@@ -67,7 +71,7 @@ class Card {
   * HTML structuring for cards adapted from code examples shown in a Medium post by Juha Lindstedt.
   * Lindstedt, Juda. (2018, November 6). "JavaScript Playing Cards Part 2: Graphics." Medium. Retrieved November 26, 2021 from https://medium.com/@pakastin/javascript-playing-cards-part-2-graphics-cd65d331ad00.
   */
-  get html(): String {
+  get html(): string {
     return `<div class="card ${this.cardColor}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
       <div class="card__top-left">
         <div class="card__corner-value">${this.value}</div>
@@ -80,7 +84,7 @@ class Card {
     </div>`;
   }
 
-  get cardColor(): String {
+  get cardColor(): string {
     switch (this.suit) {
       case Suits.spades:
         return SuitColors.black;
@@ -94,7 +98,7 @@ class Card {
   }
 
   static faceDownHTML = `<div class="card--face-down"></div>`
-  static invisibleDropTargetHTML = `<div class="card--invisible">`
+  static invisibleDropTargetHTML = `<div class="card--invisible drop-target">`
 }
 
 class Deck {
@@ -128,23 +132,24 @@ class Deck {
 }
 
 class SuitPlaceholder {
-  suit: String;
+  suit: string;
+  dropTarget: boolean = true;
 
   static spades = new SuitPlaceholder(Suits.spades);
   static clubs = new SuitPlaceholder(Suits.clubs);
   static hearts = new SuitPlaceholder(Suits.hearts);
   static diamonds = new SuitPlaceholder(Suits.diamonds);
 
-  constructor(suit: String) {
+  constructor(suit: string) {
     this.suit = suit
   }
 
-  get html(): String {
-    return `<div class="card--suit-placeholder"><img src="./media/${this.suit}.svg"></div>`;
+  get html(): string {
+    return `<div class="card--suit-placeholder${this.dropTarget ? ' drop-target' : ''}"><img src="./media/${this.suit}.svg"></div>`;
   }
 }
 
-function foundationDeckParentFor(key: String): Element {
+function foundationDeckParentFor(key: string): Element {
   switch (key) {
     case "spades":
       return gameFoundationClothSpades;
@@ -249,6 +254,37 @@ class State {
         foundationDeckParentFor(key).innerHTML = SuitPlaceholder[key].html;
       }
     }
+
+    const cards = document.getElementsByClassName("card");
+    const invisibleCards = document.getElementsByClassName("card--invisible") as HTMLCollectionOf<HTMLElement>;
+
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards.item(i);
+
+      card.addEventListener("dragstart", (event: DragEvent) => {
+        event.dataTransfer.setData("id", (event.target as Element).id);
+
+        for (let i = 0; i < invisibleCards.length; i++) {
+          invisibleCards.item(i).style.pointerEvents = 'auto';
+        }
+      });
+
+      card.addEventListener("dragend", (event: DragEvent) => {
+        for (let i = 0; i < invisibleCards.length; i++) {
+          invisibleCards.item(i).style.pointerEvents = 'none';
+        }
+      });
+    }
+
+    const dropTargets = document.getElementsByClassName("drop-target");
+
+    for (let i = 0; i < dropTargets.length; i++) {
+      const dropTarget = dropTargets.item(i);
+
+      dropTarget.addEventListener("dragover", (event: DragEvent) => {
+        const dragCard = cardWith(event.dataTransfer.getData("id"));
+      });
+    }
   }
 }
 
@@ -290,7 +326,7 @@ function clearFoundationDecksContent(): boolean {
 
 /** Game Logic **/
 
-function cardWith(id: String): Card {
+function cardWith(id: string): Card {
   for (const card of state.stockDeck.cards) {
     if (card.id === id) return card;
   }
@@ -311,7 +347,7 @@ function cardWith(id: String): Card {
     }
   }
 
-  throw new Error("Unable to find card specified by id: " + id);
+  throw new Error("Unable to find card specified by ID: " + id);
 }
 
 //Deck click logic
@@ -329,5 +365,76 @@ gameStockClothDeck.addEventListener("click", (event) => {
   state.forceUpdateUI();
 });
 
-/** Drag and Drop Implementation **/
+function positionOf(gameElement: HTMLElement): GamePositions {
+  const parentElement = gameElement.parentElement;
 
+  if (parentElement.classList.contains("game__stock-cloth__revealed-cards")) {
+    return GamePositions.stockRevealedCards;
+  }
+
+  if (parentElement.classList.contains("pile")) {
+    switch (parentElement.dataset.index) {
+      case "0":
+        return GamePositions.workingPile0;
+      case "1":
+        return GamePositions.workingPile1;
+      case "2":
+        return GamePositions.workingPile2;
+      case "3":
+        return GamePositions.workingPile3;
+      case "4":
+        return GamePositions.workingPile4;
+      case "5":
+        return GamePositions.workingPile5;
+      case "6":
+        return GamePositions.workingPile6;
+      default:
+        throw new Error("Unable to match gameElement.parentElement's pile data index to a working pile position: " + gameElement);
+    }
+
+    //Shorter but riskier method of performing same operation above:
+    // eval(`return GamePositions.workingPile${parentElement.dataset.index}`);
+  }
+
+  for (let i = 0; i < parentElement.classList.length; i++) {
+    if (parentElement.classList.item(i).includes("foundation-cloth")) {
+      switch (parentElement.classList.item(i)) {
+        case "game__foundation-cloth__spades":
+          return GamePositions.foundationDeckSpades;
+        case "game__foundation-cloth__clubs":
+          return GamePositions.foundationDeckClubs;
+        case "game__foundation-cloth__hearts":
+          return GamePositions.foundationDeckHearts;
+        case "game__foundation-cloth__diamonds":
+          return GamePositions.foundationDeckDiamonds;
+        default:
+          throw new Error("Unable to find matching foundation cloth position for gameElement's parentElement: " + parentElement);
+      }
+    }
+  }
+
+  throw new Error("Unable to find position of element specified: " + gameElement);
+}
+
+function getContainerElementFor(position: GamePositions) {
+  if (position == GamePositions.stockRevealedCards) {
+    return gameStockClothRevealedCards;
+  }
+
+  if (String(position).includes("workingPile")) {
+
+  }
+}
+
+function canMove(card: Card, to: GamePositions): boolean {
+  const destination = to;
+  const cardElement = document.getElementById(card.id);
+
+  if (positionOf(cardElement) == destination) {
+    return false;
+  }
+
+
+
+  return false;
+}

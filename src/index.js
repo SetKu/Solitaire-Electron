@@ -37,6 +37,21 @@ var Values;
     Values["queen"] = "Q";
     Values["king"] = "K";
 })(Values || (Values = {}));
+var GamePositions;
+(function (GamePositions) {
+    GamePositions[GamePositions["stockRevealedCards"] = 0] = "stockRevealedCards";
+    GamePositions[GamePositions["workingPile0"] = 1] = "workingPile0";
+    GamePositions[GamePositions["workingPile1"] = 2] = "workingPile1";
+    GamePositions[GamePositions["workingPile2"] = 3] = "workingPile2";
+    GamePositions[GamePositions["workingPile3"] = 4] = "workingPile3";
+    GamePositions[GamePositions["workingPile4"] = 5] = "workingPile4";
+    GamePositions[GamePositions["workingPile5"] = 6] = "workingPile5";
+    GamePositions[GamePositions["workingPile6"] = 7] = "workingPile6";
+    GamePositions[GamePositions["foundationDeckSpades"] = 8] = "foundationDeckSpades";
+    GamePositions[GamePositions["foundationDeckClubs"] = 9] = "foundationDeckClubs";
+    GamePositions[GamePositions["foundationDeckHearts"] = 10] = "foundationDeckHearts";
+    GamePositions[GamePositions["foundationDeckDiamonds"] = 11] = "foundationDeckDiamonds";
+})(GamePositions || (GamePositions = {}));
 class Card {
     constructor(suit, value) {
         this.draggable = true;
@@ -71,7 +86,7 @@ class Card {
     }
 }
 Card.faceDownHTML = `<div class="card--face-down"></div>`;
-Card.invisibleDropTargetHTML = `<div class="card--invisible">`;
+Card.invisibleDropTargetHTML = `<div class="card--invisible drop-target">`;
 class Deck {
     constructor(cards) {
         this.cards = cards;
@@ -95,10 +110,11 @@ class Deck {
 }
 class SuitPlaceholder {
     constructor(suit) {
+        this.dropTarget = true;
         this.suit = suit;
     }
     get html() {
-        return `<div class="card--suit-placeholder"><img src="./media/${this.suit}.svg"></div>`;
+        return `<div class="card--suit-placeholder${this.dropTarget ? ' drop-target' : ''}"><img src="./media/${this.suit}.svg"></div>`;
     }
 }
 SuitPlaceholder.spades = new SuitPlaceholder(Suits.spades);
@@ -180,6 +196,29 @@ class State {
                 foundationDeckParentFor(key).innerHTML = SuitPlaceholder[key].html;
             }
         }
+        const cards = document.getElementsByClassName("card");
+        const invisibleCards = document.getElementsByClassName("card--invisible");
+        for (let i = 0; i < cards.length; i++) {
+            const card = cards.item(i);
+            card.addEventListener("dragstart", (event) => {
+                event.dataTransfer.setData("id", event.target.id);
+                for (let i = 0; i < invisibleCards.length; i++) {
+                    invisibleCards.item(i).style.pointerEvents = 'auto';
+                }
+            });
+            card.addEventListener("dragend", (event) => {
+                for (let i = 0; i < invisibleCards.length; i++) {
+                    invisibleCards.item(i).style.pointerEvents = 'none';
+                }
+            });
+        }
+        const dropTargets = document.getElementsByClassName("drop-target");
+        for (let i = 0; i < dropTargets.length; i++) {
+            const dropTarget = dropTargets.item(i);
+            dropTarget.addEventListener("dragover", (event) => {
+                const dragCard = cardWith(event.dataTransfer.getData("id"));
+            });
+        }
     }
 }
 let _state = new State();
@@ -231,7 +270,7 @@ function cardWith(id) {
                 return card;
         }
     }
-    throw new Error("Unable to find card specified by id: " + id);
+    throw new Error("Unable to find card specified by ID: " + id);
 }
 gameStockClothDeck.addEventListener("click", (event) => {
     const sRC = state.stockRevealedCards;
@@ -245,3 +284,61 @@ gameStockClothDeck.addEventListener("click", (event) => {
     }
     state.forceUpdateUI();
 });
+function positionOf(gameElement) {
+    const parentElement = gameElement.parentElement;
+    if (parentElement.classList.contains("game__stock-cloth__revealed-cards")) {
+        return GamePositions.stockRevealedCards;
+    }
+    if (parentElement.classList.contains("pile")) {
+        switch (parentElement.dataset.index) {
+            case "0":
+                return GamePositions.workingPile0;
+            case "1":
+                return GamePositions.workingPile1;
+            case "2":
+                return GamePositions.workingPile2;
+            case "3":
+                return GamePositions.workingPile3;
+            case "4":
+                return GamePositions.workingPile4;
+            case "5":
+                return GamePositions.workingPile5;
+            case "6":
+                return GamePositions.workingPile6;
+            default:
+                throw new Error("Unable to match gameElement.parentElement's pile data index to a working pile position: " + gameElement);
+        }
+    }
+    for (let i = 0; i < parentElement.classList.length; i++) {
+        if (parentElement.classList.item(i).includes("foundation-cloth")) {
+            switch (parentElement.classList.item(i)) {
+                case "game__foundation-cloth__spades":
+                    return GamePositions.foundationDeckSpades;
+                case "game__foundation-cloth__clubs":
+                    return GamePositions.foundationDeckClubs;
+                case "game__foundation-cloth__hearts":
+                    return GamePositions.foundationDeckHearts;
+                case "game__foundation-cloth__diamonds":
+                    return GamePositions.foundationDeckDiamonds;
+                default:
+                    throw new Error("Unable to find matching foundation cloth position for gameElement's parentElement: " + parentElement);
+            }
+        }
+    }
+    throw new Error("Unable to find position of element specified: " + gameElement);
+}
+function getContainerElementFor(position) {
+    if (position == GamePositions.stockRevealedCards) {
+        return gameStockClothRevealedCards;
+    }
+    if (String(position).includes("workingPile")) {
+    }
+}
+function canMove(card, to) {
+    const destination = to;
+    const cardElement = document.getElementById(card.id);
+    if (positionOf(cardElement) == destination) {
+        return false;
+    }
+    return false;
+}

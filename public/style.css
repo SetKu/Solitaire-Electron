@@ -106,6 +106,10 @@ body {
   height: calc(3.5rem * var(--card-size-common));
 }
 
+.card--invisible {
+  pointer-events: none;
+}
+
 .card, .card--face-down, .card--suit-placeholder, .deck {
   box-shadow: 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.2);
 }
