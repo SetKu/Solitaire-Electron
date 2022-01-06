@@ -101,6 +101,16 @@ class Card {
   static invisibleDropTargetHTML = `<div class="card--invisible drop-target">`
 }
 
+Card.prototype.valueOf = function () {
+  if (Number(this.value)) {
+    return Number(this.value);
+  } else {
+    if (this.value == 'J') return 11;
+    if (this.value == 'Q') return 12;
+    if (this.value == 'K') return 13;
+  }
+};
+
 class Deck {
   cards: Array<Card>;
 
@@ -365,7 +375,7 @@ gameStockClothDeck.addEventListener("click", (event) => {
   state.forceUpdateUI();
 });
 
-function positionOf(gameElement: HTMLElement): GamePositions {
+function gamePositionOf(gameElement: HTMLElement): GamePositions {
   const parentElement = gameElement.parentElement;
 
   if (parentElement.classList.contains("game__stock-cloth__revealed-cards")) {
@@ -416,25 +426,37 @@ function positionOf(gameElement: HTMLElement): GamePositions {
   throw new Error("Unable to find position of element specified: " + gameElement);
 }
 
-function getContainerElementFor(position: GamePositions) {
-  if (position == GamePositions.stockRevealedCards) {
-    return gameStockClothRevealedCards;
-  }
-
-  if (String(position).includes("workingPile")) {
-
-  }
-}
-
-function canMove(card: Card, to: GamePositions): boolean {
-  const destination = to;
+function isMoveValid(card: Card, destination: GamePositions): boolean {
   const cardElement = document.getElementById(card.id);
 
-  if (positionOf(cardElement) == destination) {
+  if (gamePositionOf(cardElement) == destination) {
     return false;
   }
 
+  if (destination == GamePositions.stockRevealedCards) {
+    return false;
+  }
 
+  if (String(destination).includes("foundationDeck")) {
+    if (destination == GamePositions.foundationDeckClubs) {
+      if (card.suit !== Suits.clubs) {
+        return false;
+      }
+
+      /*
+       ! gameFoundationCloth could also have a suitPlaceholder. Check what value is returned in that case.
+      */
+      const topCard = cardWith(gameFoundationClothClubs.children.item(gameFoundationClothClubs.children.length - 1).id);
+
+      if (topCard == null) {
+        return true;
+      } else if (card > topCard) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
 
   return false;
 }
