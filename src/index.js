@@ -1,4 +1,5 @@
 let uuid = require('uuid');
+var cardHeight = Number(getComputedStyle(document.querySelector(".card")).getPropertyValue("height"));
 var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothDeck = document.querySelector(".deck");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
@@ -38,12 +39,14 @@ var Values;
 })(Values || (Values = {}));
 class Card {
     constructor(suit, value) {
+        this.draggable = true;
+        this.dropTarget = false;
         this.suit = suit;
         this.value = value;
         this.id = uuid.v4();
     }
     get html() {
-        return `<div class="card ${this.cardColor}" id="${this.id}" draggable="${this.draggable}">
+        return `<div class="card ${this.cardColor}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
       <div class="card__top-left">
         <div class="card__corner-value">${this.value}</div>
         <img src="./media/${this.suit}.svg" class="card__corner-suit">
@@ -68,6 +71,7 @@ class Card {
     }
 }
 Card.faceDownHTML = `<div class="card--face-down"></div>`;
+Card.invisibleDropTargetHTML = `<div class="card--invisible">`;
 class Deck {
     constructor(cards) {
         this.cards = cards;
@@ -122,10 +126,10 @@ class State {
     }
     resetState() {
         this.stockDeck = Deck.newDeck().shuffled();
-        this.referenceCards = [];
+        this.allCards = [];
         for (const card of this.stockDeck.cards) {
             const reference = card;
-            this.referenceCards.push(reference);
+            this.allCards.push(reference);
         }
         this.stockRevealedCards = [];
         let workingPiles = [];
@@ -162,6 +166,7 @@ class State {
                     pile.innerHTML += Card.faceDownHTML;
                 }
             }
+            pile.innerHTML += Card.invisibleDropTargetHTML;
         }
         styleAllPiles();
         clearFoundationDecksContent();
@@ -188,9 +193,6 @@ function styleAllPiles() {
     const piles = document.getElementsByClassName("pile");
     const offsetStart = 5.5;
     for (let i = 0; i < piles.length; i++) {
-        if (i == 0) {
-            continue;
-        }
         let pile = piles.item(i);
         for (let i = 0; i < pile.children.length; i++) {
             pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);

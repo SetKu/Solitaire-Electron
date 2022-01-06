@@ -1,7 +1,9 @@
 let uuid = require('uuid');
 //The TS compiler knows node's require function will return the any type with the help of the npm @types/node package.
 
-/*** Static Game Elements ***/
+/*** Static Page Elements ***/
+
+var cardHeight = Number(getComputedStyle(document.querySelector(".card")).getPropertyValue("height"));
 
 var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothDeck = document.querySelector(".deck");
@@ -52,7 +54,8 @@ class Card {
   suit: String;
   value: String;
   id: String;
-  draggable: true;
+  draggable: boolean = true;
+  dropTarget: boolean = false;
 
   constructor(suit: String, value: String) {
     this.suit = suit;
@@ -65,7 +68,7 @@ class Card {
   * Lindstedt, Juda. (2018, November 6). "JavaScript Playing Cards Part 2: Graphics." Medium. Retrieved November 26, 2021 from https://medium.com/@pakastin/javascript-playing-cards-part-2-graphics-cd65d331ad00.
   */
   get html(): String {
-    return `<div class="card ${this.cardColor}" id="${this.id}" draggable="${this.draggable}">
+    return `<div class="card ${this.cardColor}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
       <div class="card__top-left">
         <div class="card__corner-value">${this.value}</div>
         <img src="./media/${this.suit}.svg" class="card__corner-suit">
@@ -91,6 +94,7 @@ class Card {
   }
 
   static faceDownHTML = `<div class="card--face-down"></div>`
+  static invisibleDropTargetHTML = `<div class="card--invisible">`
 }
 
 class Deck {
@@ -154,7 +158,7 @@ function foundationDeckParentFor(key: String): Element {
 }
 
 class State {
-  referenceCards: Array<Card>;
+  allCards: Array<Card>;
 
   stockDeck: Deck;
   stockRevealedCards: Array<Card>;
@@ -176,11 +180,11 @@ class State {
   resetState() {
     this.stockDeck = Deck.newDeck().shuffled();
 
-    this.referenceCards = [];
+    this.allCards = [];
 
     for (const card of this.stockDeck.cards) {
       const reference = card;
-      this.referenceCards.push(reference);
+      this.allCards.push(reference);
     }
 
     this.stockRevealedCards = [];
@@ -228,6 +232,8 @@ class State {
           pile.innerHTML += Card.faceDownHTML;
         }
       }
+
+      pile.innerHTML += Card.invisibleDropTargetHTML;
     }
 
     styleAllPiles();
@@ -261,10 +267,6 @@ function styleAllPiles() {
   const offsetStart = 5.5;
 
   for (let i = 0; i < piles.length; i++) {
-    if (i == 0) {
-      continue;
-    }
-
     let pile = piles.item(i);
 
     for (let i = 0; i < pile.children.length; i++) {
@@ -312,7 +314,7 @@ function cardWith(id: String): Card {
   throw new Error("Unable to find card specified by id: " + id);
 }
 
-//Deck logic.
+//Deck click logic
 gameStockClothDeck.addEventListener("click", (event) => {
   const sRC = state.stockRevealedCards;
   const sDC = state.stockDeck.cards;

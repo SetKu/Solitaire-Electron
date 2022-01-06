@@ -97,16 +97,17 @@ body {
 
 .card {
   background-color: #ffffff;
+}
+
+.card, .card--face-down, .card--suit-placeholder, .card--invisible, .deck {
+  margin: 0.3rem;
+  border-radius: 0.3125rem;
   width: calc(2.5rem * var(--card-size-common));
   height: calc(3.5rem * var(--card-size-common));
 }
 
 .card, .card--face-down, .card--suit-placeholder, .deck {
-  margin: 0.3rem;
-  border-radius: 0.3125rem;
   box-shadow: 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.2);
-  width: calc(2.5rem * var(--card-size-common));
-  height: calc(3.5rem * var(--card-size-common));
 }
 
 .card--face-down, .card--suit-placeholder, .deck {
@@ -143,7 +144,7 @@ body {
   width: 0.6em;
 }
 
-.pile .card, .pile .card--face-down {
+.pile .card, .pile .card--face-down, .pile .card--invisible {
   margin-left: auto;
   margin-right: auto;
 }
