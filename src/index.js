@@ -63,11 +63,11 @@ class Card {
         return `<div class="card ${this.color}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
       <div class="card__top-left">
         <div class="card__corner-value">${this.value}</div>
-        <img src="./media/${this.suit}.svg" class="card__corner-suit">
+        <img src="./media/${this.suit}.svg" class="card__corner-suit" draggable="false">
       </div>
       <div class="card__bottom-right">
         <div class="card__corner-value">${this.value}</div>
-        <img src="./media/${this.suit}.svg" class="card__corner-suit">
+        <img src="./media/${this.suit}.svg" class="card__corner-suit" draggable="false">
       </div>
     </div>`;
     }
@@ -345,27 +345,23 @@ function gamePositionFor(gameElement) {
     throw new Error("Unable to find position of element specified: " + gameElement);
 }
 function isMoveValid(card, destination) {
-    console.log("isMoveValid fired.");
     const cardElement = document.getElementById(card.id);
-    console.log(GamePositions[gamePositionFor(cardElement)]);
-    console.log(GamePositions[destination]);
     if (gamePositionFor(cardElement) == destination) {
-        console.log(0);
         return false;
     }
     if (destination > 7) {
-        console.log("here");
         const check = function (foundationSuit, foundationCloth) {
             if (card.suit !== foundationSuit) {
-                console.log(2);
                 return false;
             }
             const topElement = foundationCloth.children.item(0);
             if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
                 return true;
             }
+            else if (topElement.classList.contains("card--suit-placeholder") && card.value != Values.ace) {
+                return false;
+            }
             else if (card > cardWith(topElement.id)) {
-                console.log(4);
                 return true;
             }
         };
@@ -381,16 +377,9 @@ function isMoveValid(card, destination) {
         }
     }
     if (destination > 0 && destination < 8) {
-        console.log(9);
-        const pile = state.workingPiles[destination];
+        const pile = state.workingPiles[destination - 1];
         const topCard = pile[pile.length - 1];
-        console.log(card.color !== topCard.color);
-        console.log(card.valueOf());
-        console.log(topCard.valueOf());
-        console.log(topCard.valueOf() - 1);
-        console.log(card.valueOf() === topCard.valueOf() - 1);
         if (card.color !== topCard.color && card.valueOf() === topCard.valueOf() - 1) {
-            console.log(10);
             return true;
         }
     }
