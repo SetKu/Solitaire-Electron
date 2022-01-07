@@ -1,5 +1,4 @@
 let uuid = require('uuid');
-var cardHeight = Number(getComputedStyle(document.querySelector(".card")).getPropertyValue("height"));
 var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothDeck = document.querySelector(".deck");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
@@ -61,7 +60,7 @@ class Card {
         this.id = uuid.v4();
     }
     get html() {
-        return `<div class="card ${this.cardColor}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
+        return `<div class="card ${this.color}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
       <div class="card__top-left">
         <div class="card__corner-value">${this.value}</div>
         <img src="./media/${this.suit}.svg" class="card__corner-suit">
@@ -72,7 +71,7 @@ class Card {
       </div>
     </div>`;
     }
-    get cardColor() {
+    get color() {
         switch (this.suit) {
             case Suits.spades:
                 return SuitColors.black;
@@ -87,6 +86,20 @@ class Card {
 }
 Card.faceDownHTML = `<div class="card--face-down"></div>`;
 Card.invisibleDropTargetHTML = `<div class="card--invisible drop-target">`;
+Card.prototype.valueOf = function () {
+    if (Number(this.value)) {
+        return Number(this.value);
+    }
+    else {
+        if (this.value == 'J')
+            return 11;
+        if (this.value == 'Q')
+            return 12;
+        if (this.value == 'K')
+            return 13;
+        throw new Error("Unable to determine primitive value of card.");
+    }
+};
 class Deck {
     constructor(cards) {
         this.cards = cards;
@@ -114,7 +127,7 @@ class SuitPlaceholder {
         this.suit = suit;
     }
     get html() {
-        return `<div class="card--suit-placeholder${this.dropTarget ? ' drop-target' : ''}"><img src="./media/${this.suit}.svg"></div>`;
+        return `<div class="card--suit-placeholder${this.dropTarget ? ' drop-target' : ''}"><img src="./media/${this.suit}.svg" draggable="false"></div>`;
     }
 }
 SuitPlaceholder.spades = new SuitPlaceholder(Suits.spades);
@@ -217,6 +230,9 @@ class State {
             const dropTarget = dropTargets.item(i);
             dropTarget.addEventListener("dragover", (event) => {
                 const dragCard = cardWith(event.dataTransfer.getData("id"));
+                if (isMoveValid(dragCard, gamePositionFor(dropTarget))) {
+                    event.preventDefault();
+                }
             });
         }
     }
@@ -228,6 +244,7 @@ let state = new Proxy(_state, {
         return true;
     }
 });
+let dragTemp = undefined;
 function styleAllPiles() {
     const piles = document.getElementsByClassName("pile");
     const offsetStart = 5.5;
@@ -284,7 +301,7 @@ gameStockClothDeck.addEventListener("click", (event) => {
     }
     state.forceUpdateUI();
 });
-function positionOf(gameElement) {
+function gamePositionFor(gameElement) {
     const parentElement = gameElement.parentElement;
     if (parentElement.classList.contains("game__stock-cloth__revealed-cards")) {
         return GamePositions.stockRevealedCards;
@@ -327,18 +344,55 @@ function positionOf(gameElement) {
     }
     throw new Error("Unable to find position of element specified: " + gameElement);
 }
-function getContainerElementFor(position) {
-    if (position == GamePositions.stockRevealedCards) {
-        return gameStockClothRevealedCards;
-    }
-    if (String(position).includes("workingPile")) {
-    }
-}
-function canMove(card, to) {
-    const destination = to;
+function isMoveValid(card, destination) {
+    console.log("isMoveValid fired.");
     const cardElement = document.getElementById(card.id);
-    if (positionOf(cardElement) == destination) {
+    console.log(GamePositions[gamePositionFor(cardElement)]);
+    console.log(GamePositions[destination]);
+    if (gamePositionFor(cardElement) == destination) {
+        console.log(0);
         return false;
+    }
+    if (destination > 7) {
+        console.log("here");
+        const check = function (foundationSuit, foundationCloth) {
+            if (card.suit !== foundationSuit) {
+                console.log(2);
+                return false;
+            }
+            const topElement = foundationCloth.children.item(0);
+            if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
+                return true;
+            }
+            else if (card > cardWith(topElement.id)) {
+                console.log(4);
+                return true;
+            }
+        };
+        switch (destination) {
+            case GamePositions.foundationDeckClubs:
+                return check(Suits.clubs, gameFoundationClothClubs);
+            case GamePositions.foundationDeckDiamonds:
+                return check(Suits.diamonds, gameFoundationClothDiamonds);
+            case GamePositions.foundationDeckHearts:
+                return check(Suits.hearts, gameFoundationClothHearts);
+            case GamePositions.foundationDeckSpades:
+                return check(Suits.spades, gameFoundationClothSpades);
+        }
+    }
+    if (destination > 0 && destination < 8) {
+        console.log(9);
+        const pile = state.workingPiles[destination];
+        const topCard = pile[pile.length - 1];
+        console.log(card.color !== topCard.color);
+        console.log(card.valueOf());
+        console.log(topCard.valueOf());
+        console.log(topCard.valueOf() - 1);
+        console.log(card.valueOf() === topCard.valueOf() - 1);
+        if (card.color !== topCard.color && card.valueOf() === topCard.valueOf() - 1) {
+            console.log(10);
+            return true;
+        }
     }
     return false;
 }

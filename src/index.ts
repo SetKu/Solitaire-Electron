@@ -3,7 +3,7 @@ let uuid = require('uuid');
 
 /*** Static Page Elements ***/
 
-var cardHeight = Number(getComputedStyle(document.querySelector(".card")).getPropertyValue("height"));
+// var cardHeight = Number(getComputedStyle(document.querySelector(".card")).getPropertyValue("height"));
 
 var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothDeck = document.querySelector(".deck");
@@ -51,7 +51,18 @@ enum Values {
 }
 
 enum GamePositions {
-  stockRevealedCards, workingPile0, workingPile1, workingPile2, workingPile3, workingPile4, workingPile5, workingPile6, foundationDeckSpades, foundationDeckClubs, foundationDeckHearts, foundationDeckDiamonds
+  stockRevealedCards,
+  workingPile0,
+  workingPile1,
+  workingPile2,
+  workingPile3,
+  workingPile4,
+  workingPile5,
+  workingPile6,
+  foundationDeckSpades,
+  foundationDeckClubs,
+  foundationDeckHearts,
+  foundationDeckDiamonds
 }
 
 class Card {
@@ -72,7 +83,7 @@ class Card {
   * Lindstedt, Juda. (2018, November 6). "JavaScript Playing Cards Part 2: Graphics." Medium. Retrieved November 26, 2021 from https://medium.com/@pakastin/javascript-playing-cards-part-2-graphics-cd65d331ad00.
   */
   get html(): string {
-    return `<div class="card ${this.cardColor}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
+    return `<div class="card ${this.color}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
       <div class="card__top-left">
         <div class="card__corner-value">${this.value}</div>
         <img src="./media/${this.suit}.svg" class="card__corner-suit">
@@ -84,7 +95,7 @@ class Card {
     </div>`;
   }
 
-  get cardColor(): string {
+  get color(): string {
     switch (this.suit) {
       case Suits.spades:
         return SuitColors.black;
@@ -101,13 +112,15 @@ class Card {
   static invisibleDropTargetHTML = `<div class="card--invisible drop-target">`
 }
 
-Card.prototype.valueOf = function () {
+Card.prototype.valueOf = function (): Number {
   if (Number(this.value)) {
     return Number(this.value);
   } else {
     if (this.value == 'J') return 11;
     if (this.value == 'Q') return 12;
     if (this.value == 'K') return 13;
+
+    throw new Error("Unable to determine primitive value of card.");
   }
 };
 
@@ -155,7 +168,7 @@ class SuitPlaceholder {
   }
 
   get html(): string {
-    return `<div class="card--suit-placeholder${this.dropTarget ? ' drop-target' : ''}"><img src="./media/${this.suit}.svg"></div>`;
+    return `<div class="card--suit-placeholder${this.dropTarget ? ' drop-target' : ''}"><img src="./media/${this.suit}.svg" draggable="false"></div>`;
   }
 }
 
@@ -293,6 +306,9 @@ class State {
 
       dropTarget.addEventListener("dragover", (event: DragEvent) => {
         const dragCard = cardWith(event.dataTransfer.getData("id"));
+        if (isMoveValid(dragCard, gamePositionFor(dropTarget as HTMLElement))) {
+          event.preventDefault();
+        }
       });
     }
   }
@@ -307,6 +323,8 @@ let state = new Proxy(_state, {
 });
 
 /*** Functional Runtime Code ***/
+
+let dragTemp = undefined;
 
 function styleAllPiles() {
   const piles = document.getElementsByClassName("pile");
@@ -375,7 +393,7 @@ gameStockClothDeck.addEventListener("click", (event) => {
   state.forceUpdateUI();
 });
 
-function gamePositionOf(gameElement: HTMLElement): GamePositions {
+function gamePositionFor(gameElement: HTMLElement): GamePositions {
   const parentElement = gameElement.parentElement;
 
   if (parentElement.classList.contains("game__stock-cloth__revealed-cards")) {
@@ -427,36 +445,70 @@ function gamePositionOf(gameElement: HTMLElement): GamePositions {
 }
 
 function isMoveValid(card: Card, destination: GamePositions): boolean {
+  console.log("isMoveValid fired.");
+
   const cardElement = document.getElementById(card.id);
 
-  if (gamePositionOf(cardElement) == destination) {
+  console.log(GamePositions[gamePositionFor(cardElement)]);
+  console.log(GamePositions[destination]);
+
+  if (gamePositionFor(cardElement) == destination) {
+    console.log(0);
     return false;
   }
 
-  if (destination == GamePositions.stockRevealedCards) {
-    return false;
+  if (destination > 7) {
+    console.log("here");
+
+    const check = function (foundationSuit: Suits, foundationCloth: Element): boolean {
+      if (card.suit !== foundationSuit) {
+        console.log(2);
+        return false;
+      }
+
+      const topElement = foundationCloth.children.item(0);
+
+      if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
+        return true;
+      } else if (card > cardWith(topElement.id)) {
+        console.log(4);
+        return true;
+      }
+    }
+
+    switch (destination) {
+      case GamePositions.foundationDeckClubs:
+        return check(Suits.clubs, gameFoundationClothClubs);
+      case GamePositions.foundationDeckDiamonds:
+        return check(Suits.diamonds, gameFoundationClothDiamonds);
+      case GamePositions.foundationDeckHearts:
+        return check(Suits.hearts, gameFoundationClothHearts);
+      case GamePositions.foundationDeckSpades:
+        return check(Suits.spades, gameFoundationClothSpades);
+    }
   }
 
-  if (String(destination).includes("foundationDeck")) {
-    if (destination == GamePositions.foundationDeckClubs) {
-      if (card.suit !== Suits.clubs) {
-        return false;
-      }
+  if (destination > 0 && destination < 8) {
+    console.log(9);
 
-      /*
-       ! gameFoundationCloth could also have a suitPlaceholder. Check what value is returned in that case.
-      */
-      const topCard = cardWith(gameFoundationClothClubs.children.item(gameFoundationClothClubs.children.length - 1).id);
+    const pile = state.workingPiles[destination];
+    const topCard = pile[pile.length - 1];
 
-      if (topCard == null) {
-        return true;
-      } else if (card > topCard) {
-        return true;
-      } else {
-        return false;
-      }
+    console.log(card.color !== topCard.color);
+    console.log(card.valueOf());
+    console.log(topCard.valueOf());
+    console.log(topCard.valueOf() as any - 1);
+    console.log(card.valueOf() === topCard.valueOf() as any - 1);
+
+    if (card.color !== topCard.color && card.valueOf() === topCard.valueOf() as any - 1) {
+      console.log(10);
+      return true;
     }
   }
 
   return false;
 }
+
+// console.log(GamePositions);
+// console.log(state.allCards[0]);
+// console.log(state.allCards[0].valueOf() as any - 1);
