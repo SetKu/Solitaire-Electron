@@ -305,9 +305,12 @@ class State {
       const dropTarget = dropTargets.item(i);
 
       dropTarget.addEventListener("dragover", (event: DragEvent) => {
-        const dragCard = cardWith(event.dataTransfer.getData("id"));
-        if (isMoveValid(dragCard, gamePositionFor(dropTarget as HTMLElement))) {
+        const id = event.dataTransfer.getData("id");
+        var dragElement = document.getElementById(id), dragCard = cardWith(id);
+
+        if (checkMove(dragCard, gamePositionFor(dropTarget as HTMLElement))) {
           event.preventDefault();
+          (<any>event.target).append(dragElement);
         }
       });
     }
@@ -444,11 +447,16 @@ function gamePositionFor(gameElement: HTMLElement): GamePositions {
   throw new Error("Unable to find position of element specified: " + gameElement);
 }
 
-function isMoveValid(card: Card, destination: GamePositions): boolean {
+interface MoveResponse {
+  isValid: boolean,
+  executionAction?: () => void;
+}
+
+function checkMove(card: Card, destination: GamePositions): MoveResponse {
   const cardElement = document.getElementById(card.id);
 
   if (gamePositionFor(cardElement) == destination) {
-    return false;
+    return { isValid: false };
   }
 
   if (destination > 7) {

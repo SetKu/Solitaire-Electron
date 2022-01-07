@@ -229,9 +229,11 @@ class State {
         for (let i = 0; i < dropTargets.length; i++) {
             const dropTarget = dropTargets.item(i);
             dropTarget.addEventListener("dragover", (event) => {
-                const dragCard = cardWith(event.dataTransfer.getData("id"));
+                const id = event.dataTransfer.getData("id");
+                var dragElement = document.getElementById(id), dragCard = cardWith(id);
                 if (isMoveValid(dragCard, gamePositionFor(dropTarget))) {
                     event.preventDefault();
+                    event.target.append(dragElement);
                 }
             });
         }
