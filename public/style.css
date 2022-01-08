@@ -91,6 +91,10 @@ body {
   grid-template-columns: repeat(7, 1fr);
 }
 
+.game__working-cloth__face-up-pile {
+  
+}
+
 .card.red {
   color: red;
 }

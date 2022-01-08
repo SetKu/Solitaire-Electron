@@ -50,14 +50,21 @@ var GamePositions;
     GamePositions[GamePositions["foundationDeckClubs"] = 9] = "foundationDeckClubs";
     GamePositions[GamePositions["foundationDeckHearts"] = 10] = "foundationDeckHearts";
     GamePositions[GamePositions["foundationDeckDiamonds"] = 11] = "foundationDeckDiamonds";
+    GamePositions[GamePositions["stockDeck"] = 12] = "stockDeck";
 })(GamePositions || (GamePositions = {}));
 class Card {
-    constructor(suit, value) {
+    constructor(suit, value, idOverride) {
         this.draggable = true;
         this.dropTarget = false;
+        this.forceFaceUp = false;
         this.suit = suit;
         this.value = value;
-        this.id = uuid.v4();
+        if (idOverride) {
+            this.id = idOverride;
+        }
+        else {
+            this.id = uuid.v4();
+        }
     }
     get html() {
         return `<div class="card ${this.color}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
@@ -83,6 +90,13 @@ class Card {
                 return SuitColors.red;
         }
     }
+    clone() {
+        let newCard = new Card(this.suit, this.value, this.id);
+        newCard.draggable = this.draggable;
+        newCard.forceFaceUp = this.forceFaceUp;
+        newCard.dropTarget = this.dropTarget;
+        return newCard;
+    }
 }
 Card.faceDownHTML = `<div class="card--face-down"></div>`;
 Card.invisibleDropTargetHTML = `<div class="card--invisible drop-target">`;
@@ -91,6 +105,8 @@ Card.prototype.valueOf = function () {
         return Number(this.value);
     }
     else {
+        if (this.value == 'A')
+            return 1;
         if (this.value == 'J')
             return 11;
         if (this.value == 'Q')
@@ -187,9 +203,31 @@ class State {
             const pile = gameWorkingClothPiles.children[i];
             pile.innerHTML = "";
             const cards = this.workingPiles[i];
-            for (let i = 0; i < cards.length; i++) {
-                if (i == cards.length - 1) {
-                    pile.innerHTML += cards[i].html;
+            if (cards.length === 0) {
+                break;
+            }
+            for (let i = 0, makeDragPile = false, pileId = ""; i < cards.length; i++) {
+                const card = cards[i];
+                let cardCopy = card.clone();
+                if (makeDragPile === true) {
+                    if (card === cards[cards.length - 1]) {
+                        document.getElementById(pileId).innerHTML += card.html;
+                    }
+                    else {
+                        cardCopy.draggable = false;
+                        document.getElementById(pileId).innerHTML += cardCopy.html;
+                    }
+                }
+                else if (card.forceFaceUp === true) {
+                    makeDragPile = true;
+                    pileId = uuid.v4();
+                    cardCopy.draggable = false;
+                    pile.innerHTML += `<div class="game__working-cloth__face-up-pile" id="${pileId}" draggable="true">
+            ${cardCopy.html}
+          </div>`;
+                }
+                else if (i == cards.length - 1) {
+                    pile.innerHTML += card.html;
                 }
                 else {
                     pile.innerHTML += Card.faceDownHTML;
@@ -202,7 +240,6 @@ class State {
         for (const key in this.foundationDecks) {
             if (this.foundationDecks[key].length != 0) {
                 let topCard = this.foundationDecks[key][this.foundationDecks[key].length - 1];
-                topCard.draggable = false;
                 foundationDeckParentFor(key).innerHTML = topCard.html;
             }
             else {
@@ -229,11 +266,20 @@ class State {
         for (let i = 0; i < dropTargets.length; i++) {
             const dropTarget = dropTargets.item(i);
             dropTarget.addEventListener("dragover", (event) => {
+                event.preventDefault();
+            });
+        }
+        for (let i = 0; i < dropTargets.length; i++) {
+            const dropTarget = dropTargets.item(i);
+            dropTarget.addEventListener("drop", (event) => {
                 const id = event.dataTransfer.getData("id");
-                var dragElement = document.getElementById(id), dragCard = cardWith(id);
-                if (isMoveValid(dragCard, gamePositionFor(dropTarget))) {
+                let dragElement = document.getElementById(id);
+                let dragCard = cardWith(id);
+                if (checkMoveValidity(dragCard, gamePositionFor(dropTarget))) {
                     event.preventDefault();
-                    event.target.append(dragElement);
+                    moveCard(dragCard, gamePositionFor(dropTarget));
+                    this.forceUpdateUI();
+                    console.log('done');
                 }
             });
         }
@@ -249,9 +295,16 @@ let state = new Proxy(_state, {
 let dragTemp = undefined;
 function styleAllPiles() {
     const piles = document.getElementsByClassName("pile");
-    const offsetStart = 5.5;
+    const forceFaceUpPiles = document.getElementsByClassName("game__working-cloth__face-up-pile");
+    const offsetStart = 4.5;
     for (let i = 0; i < piles.length; i++) {
         let pile = piles.item(i);
+        for (let i = 0; i < pile.children.length; i++) {
+            pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
+        }
+    }
+    for (let i = 0; i < forceFaceUpPiles.length; i++) {
+        let pile = forceFaceUpPiles.item(i);
         for (let i = 0; i < pile.children.length; i++) {
             pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
         }
@@ -305,10 +358,10 @@ gameStockClothDeck.addEventListener("click", (event) => {
 });
 function gamePositionFor(gameElement) {
     const parentElement = gameElement.parentElement;
-    if (parentElement.classList.contains("game__stock-cloth__revealed-cards")) {
+    if (parentElement.classList.contains("game__stock-cloth__revealed-cards") || gameElement.classList.contains("game__stock-cloth__revealed-cards")) {
         return GamePositions.stockRevealedCards;
     }
-    if (parentElement.classList.contains("pile")) {
+    if (parentElement.classList.contains("pile") || gameElement.classList.contains("pile")) {
         switch (parentElement.dataset.index) {
             case "0":
                 return GamePositions.workingPile0;
@@ -325,7 +378,7 @@ function gamePositionFor(gameElement) {
             case "6":
                 return GamePositions.workingPile6;
             default:
-                throw new Error("Unable to match gameElement.parentElement's pile data index to a working pile position: " + gameElement);
+                throw new Error("Unable to match game element's pile data index value to a working pile position: " + parentElement);
         }
     }
     for (let i = 0; i < parentElement.classList.length; i++) {
@@ -340,13 +393,78 @@ function gamePositionFor(gameElement) {
                 case "game__foundation-cloth__diamonds":
                     return GamePositions.foundationDeckDiamonds;
                 default:
-                    throw new Error("Unable to find matching foundation cloth position for gameElement's parentElement: " + parentElement);
+                    throw new Error("Unable to find matching foundation cloth position for game element: " + parentElement);
+            }
+        }
+    }
+    for (let i = 0; i < gameElement.classList.length; i++) {
+        if (gameElement.classList.item(i).includes("foundation-cloth")) {
+            switch (gameElement.classList.item(i)) {
+                case "game__foundation-cloth__spades":
+                    return GamePositions.foundationDeckSpades;
+                case "game__foundation-cloth__clubs":
+                    return GamePositions.foundationDeckClubs;
+                case "game__foundation-cloth__hearts":
+                    return GamePositions.foundationDeckHearts;
+                case "game__foundation-cloth__diamonds":
+                    return GamePositions.foundationDeckDiamonds;
+                default:
+                    throw new Error("Unable to find matching foundation cloth position for game element: " + gameElement);
             }
         }
     }
     throw new Error("Unable to find position of element specified: " + gameElement);
 }
-function isMoveValid(card, destination) {
+function moveCard(card, destination) {
+    const cardElement = document.getElementById(card.id);
+    const origin = gamePositionFor(cardElement);
+    if (origin === 0) {
+        for (let i = 0; i < 3; i++) {
+            if (gameStockClothRevealedCards.children.item(i) === cardElement) {
+                state.stockRevealedCards.splice(i, 1);
+                console.log("here", i);
+            }
+        }
+    }
+    else if (origin > 0 && origin < 8) {
+        state.workingPiles[origin - 1].pop();
+    }
+    else if (origin > 7 && origin < 12) {
+        switch (origin) {
+            case GamePositions.foundationDeckClubs:
+                state.foundationDecks.clubs.pop();
+                break;
+            case GamePositions.foundationDeckDiamonds:
+                state.foundationDecks.diamonds.pop();
+                break;
+            case GamePositions.foundationDeckHearts:
+                state.foundationDecks.hearts.pop();
+                break;
+            case GamePositions.foundationDeckSpades:
+                state.foundationDecks.spades.pop();
+        }
+    }
+    if (destination > 0 && destination < 8) {
+        state.workingPiles[destination - 1][state.workingPiles[destination - 1].length - 1].forceFaceUp = true;
+        state.workingPiles[destination - 1].push(card);
+    }
+    else if (destination > 7 && destination < 12) {
+        switch (destination) {
+            case GamePositions.foundationDeckClubs:
+                state.foundationDecks.clubs.push(card);
+                break;
+            case GamePositions.foundationDeckDiamonds:
+                state.foundationDecks.diamonds.push(card);
+                break;
+            case GamePositions.foundationDeckHearts:
+                state.foundationDecks.hearts.push(card);
+                break;
+            case GamePositions.foundationDeckSpades:
+                state.foundationDecks.spades.push(card);
+        }
+    }
+}
+function checkMoveValidity(card, destination) {
     const cardElement = document.getElementById(card.id);
     if (gamePositionFor(cardElement) == destination) {
         return false;
@@ -380,6 +498,9 @@ function isMoveValid(card, destination) {
     }
     if (destination > 0 && destination < 8) {
         const pile = state.workingPiles[destination - 1];
+        if (pile.length == 0) {
+            return false;
+        }
         const topCard = pile[pile.length - 1];
         if (card.color !== topCard.color && card.valueOf() === topCard.valueOf() - 1) {
             return true;
