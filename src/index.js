@@ -8,6 +8,7 @@ var gameFoundationClothSpades = document.querySelector('.game__foundation-cloth_
 var gameFoundationClothClubs = document.querySelector('.game__foundation-cloth__clubs');
 var gameFoundationClothHearts = document.querySelector('.game__foundation-cloth__hearts');
 var gameFoundationClothDiamonds = document.querySelector('.game__foundation-cloth__diamonds');
+var clickSoundEffect = new Audio('nirmatara_click-sound-effect.wav');
 var SuitColors;
 (function (SuitColors) {
     SuitColors["black"] = "black";
@@ -99,7 +100,6 @@ class Card {
     }
 }
 Card.faceDownHTML = `<div class="card--face-down"></div>`;
-Card.invisibleDropTargetHTML = `<div class="card--invisible drop-target">`;
 Card.prototype.valueOf = function () {
     if (Number(this.value)) {
         return Number(this.value);
@@ -241,7 +241,6 @@ class State {
                     pile.innerHTML += Card.faceDownHTML;
                 }
             }
-            pile.innerHTML += Card.invisibleDropTargetHTML;
         }
         styleAllPiles();
         clearFoundationDecksContent();
@@ -255,19 +254,12 @@ class State {
             }
         }
         const cards = document.getElementsByClassName("card");
-        const invisibleCards = document.getElementsByClassName("card--invisible");
         for (let i = 0; i < cards.length; i++) {
             const card = cards.item(i);
             card.addEventListener("dragstart", (event) => {
                 event.dataTransfer.setData("id", event.target.id);
-                for (let i = 0; i < invisibleCards.length; i++) {
-                    invisibleCards.item(i).style.pointerEvents = 'auto';
-                }
-            });
-            card.addEventListener("dragend", (event) => {
-                for (let i = 0; i < invisibleCards.length; i++) {
-                    invisibleCards.item(i).style.pointerEvents = 'none';
-                }
+                console.log(event.target.id);
+                console.log(event.target);
             });
         }
         const dropTargets = document.getElementsByClassName("drop-target");
@@ -281,11 +273,26 @@ class State {
             const dropTarget = dropTargets.item(i);
             dropTarget.addEventListener("drop", (event) => {
                 const id = event.dataTransfer.getData("id");
+                console.log(dropTarget, id);
                 let dragElement = document.getElementById(id);
-                let dragCard = cardWith(id);
-                if (checkMoveValidity(dragCard, gamePositionFor(dropTarget))) {
+                let dragItem;
+                if (dragElement.classList.contains("game__working-cloth__face-up-pile")) {
+                    let cards = [];
+                    for (let i = 0; i < dragElement.children.length; i++) {
+                        cards.push(cardWith(dragElement.children[i].id));
+                    }
+                    dragItem = {
+                        id: id,
+                        cards: cards
+                    };
+                }
+                else {
+                    dragItem = cardWith(id);
+                }
+                if (checkMoveValidity(dragItem, gamePositionFor(dropTarget))) {
                     event.preventDefault();
-                    moveCard(dragCard, gamePositionFor(dropTarget));
+                    moveItem(dragItem, gamePositionFor(dropTarget));
+                    clickSoundEffect.play();
                     this.forceUpdateUI();
                     console.log('done');
                 }
@@ -300,7 +307,6 @@ let state = new Proxy(_state, {
         return true;
     }
 });
-let dragTemp = undefined;
 function styleAllPiles() {
     const piles = document.getElementsByClassName("pile");
     const forceFaceUpPiles = document.getElementsByClassName("game__working-cloth__face-up-pile");
@@ -372,11 +378,51 @@ gameStockClothDeck.addEventListener("click", (event) => {
 });
 function gamePositionFor(gameElement) {
     const parentElement = gameElement.parentElement;
-    if (parentElement.classList.contains("game__stock-cloth__revealed-cards") || gameElement.classList.contains("game__stock-cloth__revealed-cards")) {
+    if (parentElement.classList.contains("game__working-cloth__face-up-pile") || gameElement.classList.contains("game__working-cloth__face-up-pile")) {
+        switch (parentElement.parentElement.dataset.index) {
+            case "0":
+                return GamePositions.workingPile0;
+            case "1":
+                return GamePositions.workingPile1;
+            case "2":
+                return GamePositions.workingPile2;
+            case "3":
+                return GamePositions.workingPile3;
+            case "4":
+                return GamePositions.workingPile4;
+            case "5":
+                return GamePositions.workingPile5;
+            case "6":
+                return GamePositions.workingPile6;
+            default:
+                throw new Error("Unable to match game element's pile data index value to a working pile position: " + parentElement);
+        }
+    }
+    if (gameElement.classList.contains("game__stock-cloth__revealed-cards") || parentElement.classList.contains("game__stock-cloth__revealed-cards")) {
         return GamePositions.stockRevealedCards;
     }
-    if (parentElement.classList.contains("pile") || gameElement.classList.contains("pile")) {
+    if (parentElement.classList.contains("pile")) {
         switch (parentElement.dataset.index) {
+            case "0":
+                return GamePositions.workingPile0;
+            case "1":
+                return GamePositions.workingPile1;
+            case "2":
+                return GamePositions.workingPile2;
+            case "3":
+                return GamePositions.workingPile3;
+            case "4":
+                return GamePositions.workingPile4;
+            case "5":
+                return GamePositions.workingPile5;
+            case "6":
+                return GamePositions.workingPile6;
+            default:
+                throw new Error("Unable to match game element's pile data index value to a working pile position: " + parentElement);
+        }
+    }
+    else if (gameElement.classList.contains("pile")) {
+        switch (gameElement.dataset.index) {
             case "0":
                 return GamePositions.workingPile0;
             case "1":
@@ -427,97 +473,133 @@ function gamePositionFor(gameElement) {
             }
         }
     }
+    console.log(gameElement);
     throw new Error("Unable to find position of element specified: " + gameElement);
 }
-function moveCard(card, destination) {
-    const cardElement = document.getElementById(card.id);
-    const origin = gamePositionFor(cardElement);
-    if (origin === 0) {
-        for (let i = 0; i < 3; i++) {
-            if (gameStockClothRevealedCards.children.item(i) === cardElement) {
-                state.stockRevealedCards.splice(i, 1);
-                console.log("here", i);
+function moveItem(item, destination) {
+    if (item instanceof Card) {
+        const card = item;
+        const cardElement = document.getElementById(card.id);
+        const origin = gamePositionFor(cardElement);
+        if (destination > 0 && destination < 8) {
+            state.workingPiles[destination - 1][state.workingPiles[destination - 1].length - 1].forceFaceUp = true;
+            state.workingPiles[destination - 1].push(card);
+        }
+        else if (destination > 7 && destination < 12) {
+            switch (destination) {
+                case GamePositions.foundationDeckClubs:
+                    state.foundationDecks.clubs.push(card);
+                    break;
+                case GamePositions.foundationDeckDiamonds:
+                    state.foundationDecks.diamonds.push(card);
+                    break;
+                case GamePositions.foundationDeckHearts:
+                    state.foundationDecks.hearts.push(card);
+                    break;
+                case GamePositions.foundationDeckSpades:
+                    state.foundationDecks.spades.push(card);
+            }
+        }
+        if (origin === 0) {
+            for (let i = 0; i < 3; i++) {
+                if (gameStockClothRevealedCards.children.item(i) === cardElement) {
+                    state.stockRevealedCards.splice(i, 1);
+                }
+            }
+        }
+        else if (origin > 0 && origin < 8) {
+            state.workingPiles[origin - 1].pop();
+        }
+        else if (origin > 7 && origin < 12) {
+            switch (origin) {
+                case GamePositions.foundationDeckClubs:
+                    state.foundationDecks.clubs.pop();
+                    break;
+                case GamePositions.foundationDeckDiamonds:
+                    state.foundationDecks.diamonds.pop();
+                    break;
+                case GamePositions.foundationDeckHearts:
+                    state.foundationDecks.hearts.pop();
+                    break;
+                case GamePositions.foundationDeckSpades:
+                    state.foundationDecks.spades.pop();
             }
         }
     }
-    else if (origin > 0 && origin < 8) {
-        state.workingPiles[origin - 1].pop();
-    }
-    else if (origin > 7 && origin < 12) {
-        switch (origin) {
-            case GamePositions.foundationDeckClubs:
-                state.foundationDecks.clubs.pop();
-                break;
-            case GamePositions.foundationDeckDiamonds:
-                state.foundationDecks.diamonds.pop();
-                break;
-            case GamePositions.foundationDeckHearts:
-                state.foundationDecks.hearts.pop();
-                break;
-            case GamePositions.foundationDeckSpades:
-                state.foundationDecks.spades.pop();
+    else {
+        const pile = item;
+        const dest = state.workingPiles[destination - 1];
+        const origin = gamePositionFor(document.getElementById(pile.id));
+        dest[dest.length - 1].forceFaceUp = true;
+        for (const card of pile.cards) {
+            dest.push(card);
         }
-    }
-    if (destination > 0 && destination < 8) {
-        state.workingPiles[destination - 1][state.workingPiles[destination - 1].length - 1].forceFaceUp = true;
-        state.workingPiles[destination - 1].push(card);
-    }
-    else if (destination > 7 && destination < 12) {
-        switch (destination) {
-            case GamePositions.foundationDeckClubs:
-                state.foundationDecks.clubs.push(card);
-                break;
-            case GamePositions.foundationDeckDiamonds:
-                state.foundationDecks.diamonds.push(card);
-                break;
-            case GamePositions.foundationDeckHearts:
-                state.foundationDecks.hearts.push(card);
-                break;
-            case GamePositions.foundationDeckSpades:
-                state.foundationDecks.spades.push(card);
+        switch (origin) {
+            case 1:
+                state.workingPiles[0];
         }
     }
 }
-function checkMoveValidity(card, destination) {
-    const cardElement = document.getElementById(card.id);
-    if (gamePositionFor(cardElement) == destination) {
-        return false;
-    }
-    if (destination > 7) {
-        const check = function (foundationSuit, foundationCloth) {
-            if (card.suit !== foundationSuit) {
-                return false;
-            }
-            const topElement = foundationCloth.children.item(0);
-            if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
-                return true;
-            }
-            else if (topElement.classList.contains("card--suit-placeholder") && card.value != Values.ace) {
-                return false;
-            }
-            else if (card > cardWith(topElement.id)) {
-                return true;
-            }
-        };
-        switch (destination) {
-            case GamePositions.foundationDeckClubs:
-                return check(Suits.clubs, gameFoundationClothClubs);
-            case GamePositions.foundationDeckDiamonds:
-                return check(Suits.diamonds, gameFoundationClothDiamonds);
-            case GamePositions.foundationDeckHearts:
-                return check(Suits.hearts, gameFoundationClothHearts);
-            case GamePositions.foundationDeckSpades:
-                return check(Suits.spades, gameFoundationClothSpades);
-        }
-    }
-    if (destination > 0 && destination < 8) {
-        const pile = state.workingPiles[destination - 1];
-        if (pile.length == 0) {
+function checkMoveValidity(item, destination) {
+    if (item instanceof Card) {
+        const card = item;
+        const cardElement = document.getElementById(card.id);
+        if (gamePositionFor(cardElement) == destination) {
             return false;
         }
-        const topCard = pile[pile.length - 1];
-        if (card.color !== topCard.color && card.valueOf() === topCard.valueOf() - 1) {
-            return true;
+        if (destination > 7) {
+            const check = function (foundationSuit, foundationCloth) {
+                if (card.suit !== foundationSuit) {
+                    return false;
+                }
+                const topElement = foundationCloth.children.item(0);
+                if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
+                    return true;
+                }
+                else if (topElement.classList.contains("card--suit-placeholder") && card.value != Values.ace) {
+                    return false;
+                }
+                else if (card > cardWith(topElement.id)) {
+                    return true;
+                }
+            };
+            switch (destination) {
+                case GamePositions.foundationDeckClubs:
+                    return check(Suits.clubs, gameFoundationClothClubs);
+                case GamePositions.foundationDeckDiamonds:
+                    return check(Suits.diamonds, gameFoundationClothDiamonds);
+                case GamePositions.foundationDeckHearts:
+                    return check(Suits.hearts, gameFoundationClothHearts);
+                case GamePositions.foundationDeckSpades:
+                    return check(Suits.spades, gameFoundationClothSpades);
+            }
+        }
+        if (destination > 0 && destination < 8) {
+            const pile = state.workingPiles[destination - 1];
+            if (pile.length == 0) {
+                return false;
+            }
+            const topCard = pile[pile.length - 1];
+            if (card.color !== topCard.color && card.valueOf() === topCard.valueOf() - 1) {
+                return true;
+            }
+        }
+    }
+    else {
+        if (destination > 0 && destination < 8) {
+            const workingPile = state.workingPiles[destination - 1];
+            if (workingPile.length == 0) {
+                return false;
+            }
+            const pile = item;
+            const bottomPileCard = pile.cards[0];
+            const topWorkingPileCard = workingPile[workingPile.length - 1];
+            if (bottomPileCard.color !== topWorkingPileCard.color && bottomPileCard.valueOf() === topWorkingPileCard.valueOf() - 1) {
+                return true;
+            }
+        }
+        else {
+            return false;
         }
     }
     return false;

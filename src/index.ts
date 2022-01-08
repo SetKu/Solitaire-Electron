@@ -1,7 +1,7 @@
 let uuid = require('uuid');
 //The TS compiler knows node's require function will return the any type with the help of the npm @types/node package.
 
-/*** Static Page Elements ***/
+/*** Static Elements ***/
 
 // var cardHeight = Number(getComputedStyle(document.querySelector(".card")).getPropertyValue("height"));
 
@@ -14,6 +14,8 @@ var gameFoundationClothSpades = document.querySelector('.game__foundation-cloth_
 var gameFoundationClothClubs = document.querySelector('.game__foundation-cloth__clubs');
 var gameFoundationClothHearts = document.querySelector('.game__foundation-cloth__hearts');
 var gameFoundationClothDiamonds = document.querySelector('.game__foundation-cloth__diamonds');
+
+var clickSoundEffect = new Audio('nirmatara_click-sound-effect.wav');
 
 /*** Data Model ***/
 
@@ -116,7 +118,7 @@ class Card {
   }
 
   static faceDownHTML = `<div class="card--face-down"></div>`
-  static invisibleDropTargetHTML = `<div class="card--invisible drop-target">`
+  // static invisibleDropTargetHTML = `<div class="card--invisible drop-target">`
 
   clone(): Card {
     let newCard = new Card(this.suit, this.value, this.id);
@@ -141,6 +143,11 @@ Card.prototype.valueOf = function (): Number {
     throw new Error("Unable to determine primitive value of card.");
   }
 };
+
+interface Pile {
+  id: string;
+  cards: Array<Card>;
+}
 
 class Deck {
   cards: Array<Card>;
@@ -311,8 +318,6 @@ class State {
           pile.innerHTML += Card.faceDownHTML;
         }
       }
-
-      pile.innerHTML += Card.invisibleDropTargetHTML;
     }
 
     styleAllPiles();
@@ -329,23 +334,14 @@ class State {
     }
 
     const cards = document.getElementsByClassName("card");
-    const invisibleCards = document.getElementsByClassName("card--invisible") as HTMLCollectionOf<HTMLElement>;
 
     for (let i = 0; i < cards.length; i++) {
       const card = cards.item(i);
 
       card.addEventListener("dragstart", (event: DragEvent) => {
         event.dataTransfer.setData("id", (event.target as Element).id);
-
-        for (let i = 0; i < invisibleCards.length; i++) {
-          invisibleCards.item(i).style.pointerEvents = 'auto';
-        }
-      });
-
-      card.addEventListener("dragend", (event: DragEvent) => {
-        for (let i = 0; i < invisibleCards.length; i++) {
-          invisibleCards.item(i).style.pointerEvents = 'none';
-        }
+        console.log((event.target as Element).id);
+        console.log((event.target as Element));
       });
     }
 
@@ -364,16 +360,34 @@ class State {
 
       dropTarget.addEventListener("drop", (event: DragEvent) => {
         const id = event.dataTransfer.getData("id");
+        console.log(dropTarget, id);
         let dragElement = document.getElementById(id);
-        let dragCard = cardWith(id);
+        let dragItem: Card | Pile;
 
-        if (checkMoveValidity(dragCard, gamePositionFor(dropTarget as HTMLElement))) {
+        if (dragElement.classList.contains("game__working-cloth__face-up-pile")) {
+          let cards: Array<Card> = [];
+
+          for (let i = 0; i < dragElement.children.length; i++) {
+            cards.push(cardWith(dragElement.children[i].id));
+          }
+
+          dragItem = {
+            id: id,
+            cards: cards
+          }
+        } else {
+          dragItem = cardWith(id);
+        }
+
+
+        if (checkMoveValidity(dragItem, gamePositionFor(dropTarget as HTMLElement))) {
           event.preventDefault();
-          moveCard(dragCard, gamePositionFor(dropTarget as HTMLElement));
+          moveItem(dragItem, gamePositionFor(dropTarget as HTMLElement));
+          clickSoundEffect.play();
           this.forceUpdateUI();
           console.log('done');
         }
-      }); //TODO: MAKE working piles drop target instead of invisible cards!!
+      });
     }
   }
 }
@@ -387,8 +401,6 @@ let state = new Proxy(_state, {
 });
 
 /*** Functional Runtime Code ***/
-
-let dragTemp = undefined;
 
 function styleAllPiles() {
   const piles = document.getElementsByClassName("pile");
@@ -475,11 +487,32 @@ gameStockClothDeck.addEventListener("click", (event) => {
 function gamePositionFor(gameElement: HTMLElement): GamePositions {
   const parentElement = gameElement.parentElement;
 
-  if (parentElement.classList.contains("game__stock-cloth__revealed-cards") || gameElement.classList.contains("game__stock-cloth__revealed-cards")) {
+  if (parentElement.classList.contains("game__working-cloth__face-up-pile") || gameElement.classList.contains("game__working-cloth__face-up-pile")) {
+    switch (parentElement.parentElement.dataset.index) {
+      case "0":
+        return GamePositions.workingPile0;
+      case "1":
+        return GamePositions.workingPile1;
+      case "2":
+        return GamePositions.workingPile2;
+      case "3":
+        return GamePositions.workingPile3;
+      case "4":
+        return GamePositions.workingPile4;
+      case "5":
+        return GamePositions.workingPile5;
+      case "6":
+        return GamePositions.workingPile6;
+      default:
+        throw new Error("Unable to match game element's pile data index value to a working pile position: " + parentElement);
+    }
+  }
+
+  if (gameElement.classList.contains("game__stock-cloth__revealed-cards") || parentElement.classList.contains("game__stock-cloth__revealed-cards")) {
     return GamePositions.stockRevealedCards;
   }
 
-  if (parentElement.classList.contains("pile") || gameElement.classList.contains("pile")) {
+  if (parentElement.classList.contains("pile")) {
     switch (parentElement.dataset.index) {
       case "0":
         return GamePositions.workingPile0;
@@ -500,7 +533,26 @@ function gamePositionFor(gameElement: HTMLElement): GamePositions {
     }
 
     //Shorter but riskier method of performing same operation above:
-    // eval(`return GamePositions.workingPile${parentElement.dataset.index}`);
+    // eval(`return GamePositions.workingPile${parent/gameElement.dataset.index}`);
+  } else if (gameElement.classList.contains("pile")) {
+    switch (gameElement.dataset.index) {
+      case "0":
+        return GamePositions.workingPile0;
+      case "1":
+        return GamePositions.workingPile1;
+      case "2":
+        return GamePositions.workingPile2;
+      case "3":
+        return GamePositions.workingPile3;
+      case "4":
+        return GamePositions.workingPile4;
+      case "5":
+        return GamePositions.workingPile5;
+      case "6":
+        return GamePositions.workingPile6;
+      default:
+        throw new Error("Unable to match game element's pile data index value to a working pile position: " + parentElement);
+    }
   }
 
   for (let i = 0; i < parentElement.classList.length; i++) {
@@ -537,108 +589,150 @@ function gamePositionFor(gameElement: HTMLElement): GamePositions {
     }
   }
 
+  console.log(gameElement);
   throw new Error("Unable to find position of element specified: " + gameElement);
 }
 
-function moveCard(card: Card, destination: GamePositions) {
-  const cardElement = document.getElementById(card.id);
+function moveItem(item: Card | Pile, destination: GamePositions) {
+  if (item instanceof Card) {
+    const card = item as Card;
+    const cardElement = document.getElementById(card.id);
 
-  //remove card from origin
-  const origin = gamePositionFor(cardElement);
+    //remove card from origin
+    const origin = gamePositionFor(cardElement);
 
-  if (origin === 0) {
-    for (let i = 0; i < 3; i++) {
-      if (gameStockClothRevealedCards.children.item(i) === cardElement) {
-        state.stockRevealedCards.splice(i, 1);
-        console.log("here", i);
+    //add card to destination
+    if (destination > 0 && destination < 8) {
+      state.workingPiles[destination - 1][state.workingPiles[destination - 1].length - 1].forceFaceUp = true;
+      state.workingPiles[destination - 1].push(card);
+    } else if (destination > 7 && destination < 12) {
+      switch (destination) {
+        case GamePositions.foundationDeckClubs:
+          state.foundationDecks.clubs.push(card);
+          break;
+        case GamePositions.foundationDeckDiamonds:
+          state.foundationDecks.diamonds.push(card);
+          break;
+        case GamePositions.foundationDeckHearts:
+          state.foundationDecks.hearts.push(card);
+          break;
+        case GamePositions.foundationDeckSpades:
+          state.foundationDecks.spades.push(card);
       }
     }
-  } else if (origin > 0 && origin < 8) {
-    state.workingPiles[origin - 1].pop();
-  } else if (origin > 7 && origin < 12) {
-    switch (origin) {
-      case GamePositions.foundationDeckClubs:
-        state.foundationDecks.clubs.pop();
-        break;
-      case GamePositions.foundationDeckDiamonds:
-        state.foundationDecks.diamonds.pop();
-        break;
-      case GamePositions.foundationDeckHearts:
-        state.foundationDecks.hearts.pop();
-        break;
-      case GamePositions.foundationDeckSpades:
-        state.foundationDecks.spades.pop();
-    }
-  }
 
-  //add card to destination
-  if (destination > 0 && destination < 8) {
-    state.workingPiles[destination - 1][state.workingPiles[destination - 1].length - 1].forceFaceUp = true;
-    state.workingPiles[destination - 1].push(card);
-  } else if (destination > 7 && destination < 12) {
-    switch (destination) {
-      case GamePositions.foundationDeckClubs:
-        state.foundationDecks.clubs.push(card);
-        break;
-      case GamePositions.foundationDeckDiamonds:
-        state.foundationDecks.diamonds.push(card);
-        break;
-      case GamePositions.foundationDeckHearts:
-        state.foundationDecks.hearts.push(card);
-        break;
-      case GamePositions.foundationDeckSpades:
-        state.foundationDecks.spades.push(card);
+    //remove card from origin
+    if (origin === 0) {
+      for (let i = 0; i < 3; i++) {
+        if (gameStockClothRevealedCards.children.item(i) === cardElement) {
+          state.stockRevealedCards.splice(i, 1);
+        }
+      }
+    } else if (origin > 0 && origin < 8) {
+      state.workingPiles[origin - 1].pop();
+    } else if (origin > 7 && origin < 12) {
+      switch (origin) {
+        case GamePositions.foundationDeckClubs:
+          state.foundationDecks.clubs.pop();
+          break;
+        case GamePositions.foundationDeckDiamonds:
+          state.foundationDecks.diamonds.pop();
+          break;
+        case GamePositions.foundationDeckHearts:
+          state.foundationDecks.hearts.pop();
+          break;
+        case GamePositions.foundationDeckSpades:
+          state.foundationDecks.spades.pop();
+      }
+    }
+  } else {
+    const pile = item;
+    const dest = state.workingPiles[destination - 1];
+    const origin = gamePositionFor(document.getElementById(pile.id));
+
+    dest[dest.length - 1].forceFaceUp = true;
+
+    for (const card of pile.cards) {
+      dest.push(card);
+    }
+
+    //TODO: REMOVE PILE CARDS FOR EACH WORKING PILE.
+    switch (origin) {
+      case 1:
+        state.workingPiles[0]
     }
   }
 }
 
-function checkMoveValidity(card: Card, destination: GamePositions): boolean {
-  const cardElement = document.getElementById(card.id);
+function checkMoveValidity(item: Card | Pile, destination: GamePositions): boolean {
+  if (item instanceof Card) {
+    const card = item as Card;
 
-  if (gamePositionFor(cardElement) == destination) {
-    return false;
-  }
+    const cardElement = document.getElementById(card.id);
 
-  if (destination > 7) {
-    const check = function (foundationSuit: Suits, foundationCloth: Element): boolean {
-      if (card.suit !== foundationSuit) {
-        return false;
-      }
-
-      const topElement = foundationCloth.children.item(0);
-
-      if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
-        return true;
-      } else if (topElement.classList.contains("card--suit-placeholder") && card.value != Values.ace) {
-        return false;
-      } else if (card > cardWith(topElement.id)) {
-        return true;
-      }
-    }
-
-    switch (destination) {
-      case GamePositions.foundationDeckClubs:
-        return check(Suits.clubs, gameFoundationClothClubs);
-      case GamePositions.foundationDeckDiamonds:
-        return check(Suits.diamonds, gameFoundationClothDiamonds);
-      case GamePositions.foundationDeckHearts:
-        return check(Suits.hearts, gameFoundationClothHearts);
-      case GamePositions.foundationDeckSpades:
-        return check(Suits.spades, gameFoundationClothSpades);
-    }
-  }
-
-  if (destination > 0 && destination < 8) {
-    const pile = state.workingPiles[destination - 1];
-
-    if (pile.length == 0) {
+    if (gamePositionFor(cardElement) == destination) {
       return false;
     }
 
-    const topCard = pile[pile.length - 1];
+    if (destination > 7) {
+      const check = function (foundationSuit: Suits, foundationCloth: Element): boolean {
+        if (card.suit !== foundationSuit) {
+          return false;
+        }
 
-    if (card.color !== topCard.color && card.valueOf() === topCard.valueOf() as any - 1) {
-      return true;
+        const topElement = foundationCloth.children.item(0);
+
+        if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
+          return true;
+        } else if (topElement.classList.contains("card--suit-placeholder") && card.value != Values.ace) {
+          return false;
+        } else if (card > cardWith(topElement.id)) {
+          return true;
+        }
+      }
+
+      switch (destination) {
+        case GamePositions.foundationDeckClubs:
+          return check(Suits.clubs, gameFoundationClothClubs);
+        case GamePositions.foundationDeckDiamonds:
+          return check(Suits.diamonds, gameFoundationClothDiamonds);
+        case GamePositions.foundationDeckHearts:
+          return check(Suits.hearts, gameFoundationClothHearts);
+        case GamePositions.foundationDeckSpades:
+          return check(Suits.spades, gameFoundationClothSpades);
+      }
+    }
+
+    if (destination > 0 && destination < 8) {
+      const pile = state.workingPiles[destination - 1];
+
+      if (pile.length == 0) {
+        return false;
+      }
+
+      const topCard = pile[pile.length - 1];
+
+      if (card.color !== topCard.color && card.valueOf() === topCard.valueOf() as any - 1) {
+        return true;
+      }
+    }
+  } else {
+    if (destination > 0 && destination < 8) {
+      const workingPile = state.workingPiles[destination - 1];
+
+      if (workingPile.length == 0) {
+        return false;
+      }
+
+      const pile = item;
+      const bottomPileCard = pile.cards[0];
+      const topWorkingPileCard = workingPile[workingPile.length - 1];
+
+      if (bottomPileCard.color !== topWorkingPileCard.color && bottomPileCard.valueOf() === topWorkingPileCard.valueOf() as any - 1) {
+        return true;
+      }
+    } else {
+      return false;
     }
   }
 
