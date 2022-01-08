@@ -196,8 +196,16 @@ class State {
     }
     forceUpdateUI() {
         gameStockClothRevealedCards.replaceChildren();
-        this.stockRevealedCards.forEach((card) => {
-            gameStockClothRevealedCards.innerHTML += card.html + "\n";
+        this.stockRevealedCards.forEach((card, index) => {
+            if (index === 0) {
+                gameStockClothRevealedCards.innerHTML += card.html + "\n";
+            }
+            else {
+                const cardCopy = card.clone();
+                cardCopy.draggable = false;
+                gameStockClothRevealedCards.innerHTML += cardCopy.html + "\n";
+                document.getElementById(cardCopy.id).style.opacity = "0.5";
+            }
         });
         for (let i = 0; i < 7; i++) {
             const pile = gameWorkingClothPiles.children[i];
@@ -300,7 +308,13 @@ function styleAllPiles() {
     for (let i = 0; i < piles.length; i++) {
         let pile = piles.item(i);
         for (let i = 0; i < pile.children.length; i++) {
-            pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
+            if (i !== 0 && pile.children[i - 1].classList.contains("game__working-cloth__face-up")) {
+                const offset = offsetStart * i + (pile.children[i - 1].children.length * 6.9) + 10;
+                pile.children[i].setAttribute("style", `transform: translateY(-${offset}rem);`);
+            }
+            else {
+                pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
+            }
         }
     }
     for (let i = 0; i < forceFaceUpPiles.length; i++) {
