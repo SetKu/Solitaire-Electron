@@ -210,8 +210,31 @@ function foundationDeckParentFor(key: string): Element {
   }
 }
 
+class StateLog {
+  id: string;
+  state: State;
+  timeDiscarded: Date;
+
+  constructor(state: State, id?: string, timeDiscarded?: Date) {
+    this.state = state;
+
+    if (id) {
+      this.id = id;
+    } else {
+      this.id = uuid.v4();
+    }
+
+    if (timeDiscarded) {
+      this.timeDiscarded = timeDiscarded;
+    } else {
+      this.timeDiscarded = new Date();
+    }
+  }
+}
+
 class State {
   allCards: Array<Card>;
+  history: Array<StateLog> = [];
 
   stockDeck: Deck;
   stockRevealedCards: Array<Card>;
@@ -225,6 +248,7 @@ class State {
 
   constructor(silent: boolean = false) {
     this.resetState();
+    this.history.push(new StateLog(this));
 
     if (silent) return;
     this.forceUpdateUI();
@@ -303,7 +327,7 @@ class State {
             cardCopy.draggable = false;
             document.getElementById(pileId).innerHTML += cardCopy.html;
           }
-        } else if (card.forceFaceUp === true) {
+        } else if (card.forceFaceUp === true && i !== cards.length - 1) {
           makeDragPile = true;
           pileId = uuid.v4();
 
@@ -312,7 +336,7 @@ class State {
           pile.innerHTML += `<div class="game__working-cloth__face-up-pile" id="${pileId}" draggable="true">
             ${cardCopy.html}
           </div>`;
-        } else if (i == cards.length - 1) {
+        } else if (i === cards.length - 1) {
           pile.innerHTML += card.html;
         } else {
           pile.innerHTML += Card.faceDownHTML;
@@ -340,8 +364,8 @@ class State {
 
       card.addEventListener("dragstart", (event: DragEvent) => {
         event.dataTransfer.setData("id", (event.target as Element).id);
-        console.log((event.target as Element).id);
-        console.log((event.target as Element));
+        console.log("Setting dragEvent id property to (event.target as Element).id: " + (event.target as Element).id);
+        console.log("(event.target as Element):\n", (event.target as Element));
       });
     }
 
@@ -360,7 +384,7 @@ class State {
 
       dropTarget.addEventListener("drop", (event: DragEvent) => {
         const id = event.dataTransfer.getData("id");
-        console.log(dropTarget, id);
+        console.log("dropTarget:", dropTarget, "dragElementId:", id);
         let dragElement = document.getElementById(id);
         let dragItem: Card | Pile;
 
@@ -395,7 +419,12 @@ class State {
 let _state = new State();
 let state = new Proxy(_state, {
   set: (object, prop, value) => {
+    object.history.push(new StateLog(object));
+
     object[prop] = value;
+
+    console.log("The state has been updated.\n", object.history);
+
     return true;
   }
 });
@@ -605,6 +634,7 @@ function moveItem(item: Card | Pile, destination: GamePositions) {
     if (destination > 0 && destination < 8) {
       state.workingPiles[destination - 1][state.workingPiles[destination - 1].length - 1].forceFaceUp = true;
       state.workingPiles[destination - 1].push(card);
+      console.log(state.workingPiles[destination - 1]);
     } else if (destination > 7 && destination < 12) {
       switch (destination) {
         case GamePositions.foundationDeckClubs:
@@ -656,11 +686,8 @@ function moveItem(item: Card | Pile, destination: GamePositions) {
       dest.push(card);
     }
 
-    //TODO: REMOVE PILE CARDS FOR EACH WORKING PILE.
-    switch (origin) {
-      case 1:
-        state.workingPiles[0]
-    }
+    const wPile = state.workingPiles[origin - 1];
+    wPile.splice(wPile.length - pile.cards.length, pile.cards.length);
   }
 }
 

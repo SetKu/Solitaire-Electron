@@ -162,9 +162,28 @@ function foundationDeckParentFor(key) {
             return gameFoundationClothDiamonds;
     }
 }
+class StateLog {
+    constructor(state, id, timeDiscarded) {
+        this.state = state;
+        if (id) {
+            this.id = id;
+        }
+        else {
+            this.id = uuid.v4();
+        }
+        if (timeDiscarded) {
+            this.timeDiscarded = timeDiscarded;
+        }
+        else {
+            this.timeDiscarded = new Date();
+        }
+    }
+}
 class State {
     constructor(silent = false) {
+        this.history = [];
         this.resetState();
+        this.history.push(new StateLog(this));
         if (silent)
             return;
         this.forceUpdateUI();
@@ -226,7 +245,7 @@ class State {
                         document.getElementById(pileId).innerHTML += cardCopy.html;
                     }
                 }
-                else if (card.forceFaceUp === true) {
+                else if (card.forceFaceUp === true && i !== cards.length - 1) {
                     makeDragPile = true;
                     pileId = uuid.v4();
                     cardCopy.draggable = false;
@@ -234,7 +253,7 @@ class State {
             ${cardCopy.html}
           </div>`;
                 }
-                else if (i == cards.length - 1) {
+                else if (i === cards.length - 1) {
                     pile.innerHTML += card.html;
                 }
                 else {
@@ -258,8 +277,8 @@ class State {
             const card = cards.item(i);
             card.addEventListener("dragstart", (event) => {
                 event.dataTransfer.setData("id", event.target.id);
-                console.log(event.target.id);
-                console.log(event.target);
+                console.log("Setting dragEvent id property to (event.target as Element).id: " + event.target.id);
+                console.log("(event.target as Element):\n", event.target);
             });
         }
         const dropTargets = document.getElementsByClassName("drop-target");
@@ -273,7 +292,7 @@ class State {
             const dropTarget = dropTargets.item(i);
             dropTarget.addEventListener("drop", (event) => {
                 const id = event.dataTransfer.getData("id");
-                console.log(dropTarget, id);
+                console.log("dropTarget:", dropTarget, "dragElementId:", id);
                 let dragElement = document.getElementById(id);
                 let dragItem;
                 if (dragElement.classList.contains("game__working-cloth__face-up-pile")) {
@@ -303,7 +322,9 @@ class State {
 let _state = new State();
 let state = new Proxy(_state, {
     set: (object, prop, value) => {
+        object.history.push(new StateLog(object));
         object[prop] = value;
+        console.log("The state has been updated.\n", object.history);
         return true;
     }
 });
@@ -484,6 +505,7 @@ function moveItem(item, destination) {
         if (destination > 0 && destination < 8) {
             state.workingPiles[destination - 1][state.workingPiles[destination - 1].length - 1].forceFaceUp = true;
             state.workingPiles[destination - 1].push(card);
+            console.log(state.workingPiles[destination - 1]);
         }
         else if (destination > 7 && destination < 12) {
             switch (destination) {
@@ -534,10 +556,8 @@ function moveItem(item, destination) {
         for (const card of pile.cards) {
             dest.push(card);
         }
-        switch (origin) {
-            case 1:
-                state.workingPiles[0];
-        }
+        const wPile = state.workingPiles[origin - 1];
+        wPile.splice(wPile.length - pile.cards.length, pile.cards.length);
     }
 }
 function checkMoveValidity(item, destination) {

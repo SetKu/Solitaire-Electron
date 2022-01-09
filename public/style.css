@@ -143,6 +143,10 @@ body {
   right: -2.65rem;
 }
 
+.card__corner-value, .card__corner-suit {
+  user-select: none;
+}
+
 .card__corner-suit {
   height: 0.88125em;
   width: 0.6em;
