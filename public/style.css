@@ -44,7 +44,7 @@ body {
   display: grid;
   grid-template-columns: 6rem 4fr 6rem;
   margin: 22pt;
-  box-shadow: 5pt 5pt 10pt rgba(0, 0, 0, 0.5);
+  box-shadow: 3pt 3pt 10pt rgba(0, 0, 0, 0.5);
   border-radius: var(--border-radius);
 }
 
@@ -60,7 +60,7 @@ body {
   display: grid;
 }
 
-.game__stock-cloth, .game__working-cloth, .game__foundation-cloth, .pile {
+.game__stock-cloth, .game__working-cloth, .game__foundation-cloth {
   max-height: var(--game-max-height);
 }
 
@@ -89,6 +89,11 @@ body {
   margin-top: 0.45rem;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+}
+
+.game__working-cloth__piles__alert {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .card.red {
@@ -166,6 +171,10 @@ body {
   width: 2rem;
 }
 
+.pile {
+  max-height: calc(var(--game-max-height) - 1rem);
+}
+
 .footer {
   position: fixed;
   bottom: 0;
@@ -176,6 +185,11 @@ body {
 
 .footer, .footer a:link {
   color: whitesmoke;
+}
+
+.footer a:hover {
+  color: #ffffff;
+  filter: drop-shadow(0 0 0.7rem black);
 }
 
 .footer a:visited {

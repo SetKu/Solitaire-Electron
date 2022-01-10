@@ -9,3 +9,5 @@
 - [Stack Overflow comment on rounding the corners of a grid used in the main game grid.](https://stackoverflow.com/a/19990800)
 - [Spades Playing Card Icon in title.](https://www.svgrepo.com/svg/286712/spades-playing-cards)
   - CC0 license (Public domain);
+
+- [Apparently Klondike Solitaire's rule above being or not being able to move partial sequeunces of cards is ambigous and open to interpretation.](https://boardgames.stackexchange.com/questions/15051/klondike-solitaire-moving-partial-sequences-between-columns)
