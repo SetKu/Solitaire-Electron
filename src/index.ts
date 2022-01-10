@@ -9,6 +9,7 @@ var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothDeck = document.querySelector(".deck");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
 var gameWorkingClothPiles = document.querySelector('.game__working-cloth__piles');
+var gameControlsNewGame = document.querySelector('.game__controls__new-game');
 var gameFoundationCloth = document.querySelector('.game__foundation-cloth');
 var gameFoundationClothSpades = document.querySelector('.game__foundation-cloth__spades');
 var gameFoundationClothClubs = document.querySelector('.game__foundation-cloth__clubs');
@@ -452,11 +453,11 @@ class State {
       });
     }
 
-    const setElementsState = (state: string) => {
+    const setElementsState = (state: boolean) => {
       const cards = document.getElementsByClassName("card");
       const decks = document.getElementsByClassName("deck");
 
-      if (state === "true") {
+      if (state === true) {
         for (let i = 0; i < cards.length; i++) {
           (cards.item(i) as HTMLElement).style.pointerEvents = "none";
         }
@@ -476,12 +477,32 @@ class State {
     }
 
     if (this.gameEnded) {
-      setElementsState("true");
+      setElementsState(true);
 
-      deckSurface.innerHTML = `${deckSurface.innerHTML}
-      <div class="game__working-cloth__piles__alert">Congratulations! You won the game.</div>`;
+      let id = uuid.v4();
+      let buttonId = uuid.v4();
+
+      deckSurface.innerHTML = `<div class="alert" id="${id}">
+        <span>Congratulations! You won the game.</span>
+        <button id="${buttonId}"><strong>X</strong></button>
+      </div>
+      ${deckSurface.innerHTML}`;
+
+      function fadeOut(id: string) {
+        document.getElementById(id).style.animationName = 'fadeOut';
+
+        const removeElement = () => {
+          document.getElementById(id).remove()
+        }
+
+        window.setTimeout(removeElement, 1000);
+      }
+
+      document.getElementById(buttonId).addEventListener("click", () => {
+        fadeOut(id);
+      });
     } else {
-      setElementsState("false");
+      setElementsState(false);
     }
 
     this.forceUpdateUICount++;
@@ -544,6 +565,13 @@ function clearFoundationDecksContent(): boolean {
 
   return successful;
 }
+
+//New game button functionality
+gameControlsNewGame.addEventListener("click", () => {
+  state.history.push(new StateLog(state));
+  state.resetState();
+  state.forceUpdateUI();
+});
 
 /** Game Logic **/
 
@@ -898,7 +926,3 @@ function checkMoveValidity(item: Card | Pile, destination: GamePositions): boole
 // }
 
 // console.log(GamePositions);
-
-state.history.push(new StateLog(state));
-state.gameEnded = true;
-console.log(state); state.forceUpdateUI();

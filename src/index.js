@@ -1,9 +1,11 @@
 let uuid = require('uuid');
+var deckSurface = document.querySelector(".deck-surface");
 var game = document.querySelector('.game');
 var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothDeck = document.querySelector(".deck");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
 var gameWorkingClothPiles = document.querySelector('.game__working-cloth__piles');
+var gameControlsNewGame = document.querySelector('.game__controls__new-game');
 var gameFoundationCloth = document.querySelector('.game__foundation-cloth');
 var gameFoundationClothSpades = document.querySelector('.game__foundation-cloth__spades');
 var gameFoundationClothClubs = document.querySelector('.game__foundation-cloth__clubs');
@@ -351,7 +353,7 @@ class State {
         const setElementsState = (state) => {
             const cards = document.getElementsByClassName("card");
             const decks = document.getElementsByClassName("deck");
-            if (state === "true") {
+            if (state === true) {
                 for (let i = 0; i < cards.length; i++) {
                     cards.item(i).style.pointerEvents = "none";
                 }
@@ -369,12 +371,27 @@ class State {
             }
         };
         if (this.gameEnded) {
-            setElementsState("true");
-            gameWorkingClothPiles.innerHTML = `${gameWorkingClothPiles.innerHTML}
-      <div class="game__working-cloth__piles__alert">Congratulations! You won the game.</div>`;
+            setElementsState(true);
+            let id = uuid.v4();
+            let buttonId = uuid.v4();
+            deckSurface.innerHTML = `<div class="alert" id="${id}">
+        <span>Congratulations! You won the game.</span>
+        <button id="${buttonId}"><strong>X</strong></button>
+      </div>
+      ${deckSurface.innerHTML}`;
+            function fadeOut(id) {
+                document.getElementById(id).style.animationName = 'fadeOut';
+                const removeElement = () => {
+                    document.getElementById(id).remove();
+                };
+                window.setTimeout(removeElement, 1000);
+            }
+            document.getElementById(buttonId).addEventListener("click", () => {
+                fadeOut(id);
+            });
         }
         else {
-            setElementsState("false");
+            setElementsState(false);
         }
         this.forceUpdateUICount++;
     }
@@ -424,6 +441,11 @@ function clearFoundationDecksContent() {
     }
     return successful;
 }
+gameControlsNewGame.addEventListener("click", () => {
+    state.history.push(new StateLog(state));
+    state.resetState();
+    state.forceUpdateUI();
+});
 function checkGameStatus() {
     let tally = 0;
     for (const key in state.foundationDecks) {
@@ -734,7 +756,3 @@ function checkMoveValidity(item, destination) {
     }
     return false;
 }
-state.history.push(new StateLog(state));
-state.gameEnded = true;
-console.log(state);
-state.forceUpdateUI();
