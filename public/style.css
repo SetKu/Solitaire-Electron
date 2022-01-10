@@ -216,7 +216,7 @@ body {
   display: flex;
   width: 10rem;
   background-color: #297817;
-  padding: 0.8rem;
+  padding: 12px 0;
 }
 
 .game__controls__new-game {
