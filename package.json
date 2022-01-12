@@ -18,7 +18,7 @@
     "tsc": "tsc",
     "webpack": "webpack",
     "webpack-watch": "webpack --watch",
-    "start": "npm start"
+    "start": "node server.js"
   },
   "author": "Zachary Morden",
   "license": "MIT",

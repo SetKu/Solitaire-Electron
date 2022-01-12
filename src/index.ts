@@ -1,13 +1,13 @@
-import { stat } from "fs/promises";
+//This file is the index.ts file. It is written in TypeScript and compiled into regular ES6 JavaScript as index.js. This index.js file is then compressed and has its dependecies handled using webpack to creates the ../dist/main.js file which is minified and what the browser actually uses when rendering the index.html file.
 
+//This code imports the uuid node package manager module 'uuid' which can generate random unqiue identifier strings.
 let uuid = require('uuid');
-//The TS compiler knows node's require function will return the any type with the help of the npm @types/node package.
 
 /*** Static Elements ***/
 
+//This section sets up a series of variables each corresponding to a static html element gotten by a class name. The querySelector will get the first html element it finds with the corresponding class.
+
 var alerts = document.querySelector('.alerts');
-var game = document.querySelector('.game');
-var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothDeck = document.querySelector(".deck");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
 var gameWorkingClothPiles = document.querySelector('.game__working-cloth__piles');
@@ -19,9 +19,14 @@ var gameFoundationClothClubs = document.querySelector('.game__foundation-cloth__
 var gameFoundationClothHearts = document.querySelector('.game__foundation-cloth__hearts');
 var gameFoundationClothDiamonds = document.querySelector('.game__foundation-cloth__diamonds');
 
+//This variable sets up a reference to the click sound effect to be played later.
 var clickSoundEffect = new Audio('./media/nirmatara_click-sound-effect.wav');
 
 /*** Data Model ***/
+
+//This section hosts a series of functions, enums, and classes all of which makeup the backend of my data model.
+
+//The SuitColors enum stores the two possible colors a card could be in the game.
 
 enum SuitColors {
   black = "black",
@@ -29,9 +34,11 @@ enum SuitColors {
 }
 
 /*
-* Deck and Card class naming structure inspired by Web Dev Simplified's video on recreating the card game war for the web.
-* Web Dev Simplified. (2020, November 14). "How To Build A Simple Card Game With JavaScript." YouTube. Retrieved November 23, 2021, from https://youtu.be/NxRwIZWjLtE.
+ * Deck and Card class naming structure inspired by Web Dev Simplified's video on recreating the card game "war" for the web.
+ * Web Dev Simplified. (2020, November 14). "How To Build A Simple Card Game With JavaScript." YouTube. Retrieved November 23, 2021, from https://youtu.be/NxRwIZWjLtE.
 */
+
+//The Suits and Values enums each store the possible suits and values a card could have, respectively.
 
 enum Suits {
   spades = "spades",
@@ -56,6 +63,8 @@ enum Values {
   king = "K"
 }
 
+//The GamePositions enum stores all the possible positions a card could be placed in in the game. From the stock to foundation decks.
+
 enum GamePositions {
   stockRevealedCards,
   workingPile0,
@@ -72,30 +81,40 @@ enum GamePositions {
   stockDeck
 }
 
+//The Card class sets up the data model for the cards within the game. It stores several properties a card would have, such as its suit and value, and has computed properties and methods to perform calculated actions on the card.
+
 class Card {
+  //The following are properties of which store information about the card.
   suit: string;
   value: string;
+
+  //The id property stores the card's unqiue identifier which can be used to locate it in the data model and in the user interface.
   id: string;
+
+  //The following are properties which affect how the card is implemented and rendered in the user interface.
   draggable: boolean = true;
   dropTarget: boolean = false;
   forceFaceUp: boolean = false;
 
-  constructor(suit: string, value: string, idOverride?: string) {
+  //The constructor actually creates Card instance. For each card it is required to provide a suit and a value. An id can also be provided to override the automatic generation of one. 
+  constructor(suit: string, value: string, id?: string) {
     this.suit = suit;
     this.value = value;
 
-    if (idOverride) {
-      this.id = idOverride;
+    if (id) {
+      this.id = id;
     } else {
       this.id = uuid.v4();
     }
   }
 
-  /*
-  * HTML structuring for cards adapted from code examples shown in a Medium post by Juha Lindstedt.
-  * Lindstedt, Juda. (2018, November 6). "JavaScript Playing Cards Part 2: Graphics." Medium. Retrieved November 26, 2021 from https://medium.com/@pakastin/javascript-playing-cards-part-2-graphics-cd65d331ad00.
-  */
+  //This is a computed property which returns the html needed to display the car in the UI.
   get html(): string {
+    /*
+    * HTML structuring for cards adapted from code examples shown in a Medium post by Juha Lindstedt.
+    * Lindstedt, Juda. (2018, November 6). "JavaScript Playing Cards Part 2: Graphics." Medium. Retrieved November 26, 2021 from https://medium.com/@pakastin/javascript-playing-cards-part-2-graphics-cd65d331ad00.
+    */
+
     return `<div class="card ${this.color}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
       <div class="card__top-left">
         <div class="card__corner-value">${this.value}</div>
@@ -108,6 +127,7 @@ class Card {
     </div>`;
   }
 
+  //This computed property returns the color of the card based on its suit.
   get color(): string {
     switch (this.suit) {
       case Suits.spades:
@@ -121,8 +141,10 @@ class Card {
     }
   }
 
+  //This property is static (meaning its owned by the class) and returns the html required to display a face-down card.
   static faceDownHTML = `<div class="card--face-down"></div>`
 
+  //The clone method creates a new unlinked card instance with all the same values as the card its called on, copying it.
   clone(): Card {
     let newCard = new Card(this.suit, this.value, this.id);
 
@@ -134,7 +156,9 @@ class Card {
   }
 }
 
+//This prototype assignment alters the way the primitive value of a card is computed. It is computed by returning a number value corresponding to a cards value (aces are low). The change allows for two cards to be compared using the native greater than and less than operations within JavaScript/TypeScript.
 Card.prototype.valueOf = function (): Number {
+  //The first if case here handles all card values from 1 through 10. The else case handles all other values which aren't able to be coerced to a number, such as 'A' for ace.
   if (Number(this.value)) {
     return Number(this.value);
   } else {
@@ -143,15 +167,18 @@ Card.prototype.valueOf = function (): Number {
     if (this.value == 'Q') return 12;
     if (this.value == 'K') return 13;
 
+    //An error is thrown if a primitive value cannot be calculated for the Card. In practice, this should never occur.
     throw new Error("Unable to determine primitive value of card.");
   }
 };
 
+//This interface (which can be though of as a protocol or template) defines an object that represents a pile in the data model. It has two corresponding properties which are required to locate and use the object in the data model.
 interface Pile {
   id: string;
   cards: Array<Card>;
 }
 
+//The Deck class represents a deck in the data model and has a cards property, which contains the deck's cards, a shuffle method, and newDeck static method.
 class Deck {
   cards: Array<Card>;
 
@@ -159,19 +186,23 @@ class Deck {
     this.cards = cards;
   }
 
+  //This method shuffles the cards of the deck is belongs to using a random proven algorithm.
   shuffled(): Deck {
-    // Fisher-Yates Algorithm implementation.
+    //Fisher-Yates Algorithm implementation. https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
+    //This algorithm iterates through each cards in the deck except for the last one it finds and switches its place with a random card in the deck.
     for (var a = this.cards.length - 1; a > 0; a--) {
       const b = Math.floor(Math.random() * (a + 1));
       [this.cards[a], this.cards[b]] = [this.cards[b], this.cards[a]];
     }
 
-    return this
+    return this;
   }
 
+  //This newDeck static method returns a new suit-sorted deck.
   static newDeck(): Deck {
     let cards: Array<Card> = [];
 
+    //This iteration adds a card for each value corresponding to a each suit. With 4 suits and 13 values, the resulting number of cards in the deck will be 52 cards.
     for (const suit of Object.values(Suits)) {
       for (const value of Object.values(Values)) {
         cards.push(new Card(suit, value));
@@ -182,10 +213,13 @@ class Deck {
   }
 }
 
+//The SuitPlaceholder class defines the data model for a placeholder suit object to be used to represent an empty foundation deck.
 class SuitPlaceholder {
+  //These two properties define the only two configurable options for the SuitPlaceholder.
   suit: string;
   dropTarget: boolean = true;
 
+  //These four static properties are primarily used when interacting with the SuitPlaceholder class. It returns the default corresponding SuitPlaceholder for each of the suits in the game.
   static spades = new SuitPlaceholder(Suits.spades);
   static clubs = new SuitPlaceholder(Suits.clubs);
   static hearts = new SuitPlaceholder(Suits.hearts);
@@ -195,11 +229,13 @@ class SuitPlaceholder {
     this.suit = suit
   }
 
+  //This property returns the html for the suit placeholder which is just a simple div holding an image corresponding to the suit configured.
   get html(): string {
     return `<div class="card--suit-placeholder${this.dropTarget ? ' drop-target' : ''}"><img src="./media/${this.suit}.svg" draggable="false"></div>`;
   }
 }
 
+//This function returns the foundation deck for key provided to it which corresponds to the foundationDeck keys in the State class.
 function foundationDeckParentFor(key: string): Element {
   switch (key) {
     case "spades":
@@ -213,66 +249,15 @@ function foundationDeckParentFor(key: string): Element {
   }
 }
 
+//This StateLog class is used to storage a logged version of a State instance which is associated with a unique identifier and a time. This is used in my code so far to log the State whenever a move is made, so that the undo button can undo it by loading a previous version of the state.
 class StateLog {
   id: string;
   state: State;
   timeDiscarded: Date;
 
+  //This constructor handles creating a new StateLog object which is complicated due to the nature of pointer references.
   constructor(state: State, id?: string, timeDiscarded?: Date) {
-    this.state = new State();
-
-    let allCardsClone = [];
-
-    for (const card of state.allCards) {
-      allCardsClone.push(card.clone());
-    }
-
-    this.state.allCards = allCardsClone;
-
-    let stockDeckCloneCards = [];
-
-    for (const card of state.stockDeck.cards) {
-      stockDeckCloneCards.push(card.clone());
-    }
-
-    this.state.stockDeck = new Deck(stockDeckCloneCards);
-
-    let stockRevealedCardsClone = [];
-
-    for (const card of state.stockRevealedCards) {
-      stockRevealedCardsClone.push(card.clone());
-    }
-
-    this.state.stockRevealedCards = stockRevealedCardsClone;
-
-    let workingPilesClone = [[], [], [], [], [], [], []];
-
-    for (let i = 0; i < workingPilesClone.length; i++) {
-      for (const card of state.workingPiles[i]) {
-        workingPilesClone[i].push(card.clone());
-      }
-    }
-
-    this.state.workingPiles = workingPilesClone;
-
-    let foundationDecksClone = {
-      spades: [],
-      clubs: [],
-      hearts: [],
-      diamonds: []
-    }
-
-    for (const key in foundationDecksClone) {
-      for (const card of state.foundationDecks[key]) {
-        foundationDecksClone[key].push(card.clone());
-      }
-    }
-
-    this.state.foundationDecks = foundationDecksClone;
-
-    this.state.history = state.history;
-    this.state.gameEnded = state.gameEnded;
-
+    //If the user provided a value for the optional id or timeDiscarded parameters, they are supplied instead of an automatically generated value for the instance.
     if (id) {
       this.id = id;
     } else {
@@ -284,9 +269,67 @@ class StateLog {
     } else {
       this.timeDiscarded = new Date();
     }
+
+    /* This next section creates a copy of a state object by cloning each of its properties, of which some require specific cloning actions to be taken. */
+
+    //First a new State object is initialized.
+    this.state = new State();
+
+    //Second, a variable is created for the property about to be cloned.
+    let stockDeckCloneCards = [];
+
+    //Third, for each item in the property (which in this case means drilling down into the 'cards' property of that Deck typed property) it is cloned using its clone method and added to the designated variable for the clones, which delegate some of this constructors work.
+    for (const card of state.stockDeck.cards) {
+      stockDeckCloneCards.push(card.clone());
+    }
+
+    //Fourth, the clone variable is assigned to the current StateLog's state instance.
+    this.state.stockDeck = new Deck(stockDeckCloneCards);
+
+    //This processes is repeated again and again. If more explanation is required another comment will be present.
+    let stockRevealedCardsClone = [];
+
+    for (const card of state.stockRevealedCards) {
+      stockRevealedCardsClone.push(card.clone());
+    }
+
+    this.state.stockRevealedCards = stockRevealedCardsClone;
+
+    //The workingPiles state property is an array of 7 more arrays. To properly clone it, each of the arrays arrays' cards are cloned into their corresponding working pile in the clone variable.
+    let workingPilesClone = [[], [], [], [], [], [], []];
+
+    for (let i = 0; i < workingPilesClone.length; i++) {
+      for (const card of state.workingPiles[i]) {
+        workingPilesClone[i].push(card.clone());
+      }
+    }
+
+    this.state.workingPiles = workingPilesClone;
+
+    //The foundationDecks property is an object with for keys corresponding to each of the four suits. Each key corresponds to an array which holds the cards in the foundation deck.
+    let foundationDecksClone = {
+      spades: [],
+      clubs: [],
+      hearts: [],
+      diamonds: []
+    }
+
+    //To clone the foundation deck, for each key in the foundationDeck property each of the cards within that key's corresponding array are cloned into that same corresponding key's properties in the clone variable.
+    for (const key in foundationDecksClone) {
+      for (const card of state.foundationDecks[key]) {
+        foundationDecksClone[key].push(card.clone());
+      }
+    }
+
+    this.state.foundationDecks = foundationDecksClone;
+
+    //These final two properties can be normally copied, and not cloned, because they are value types, not reference types.
+    this.state.history = state.history;
+    this.state.gameEnded = state.gameEnded;
   }
 }
 
+//The Alert class will store the data for an alert banner which is presented to the user. The alert is configurable to fade out when the dismisses it, and accepts custom parameter values if desired by the user.
 class Alert {
   id: string;
   buttonId: string;
@@ -294,7 +337,10 @@ class Alert {
   fadeOut: boolean = true;
 
   constructor(text: string, id?: string, buttonId?: string, fadeOut?: boolean) {
+    //The text parameter is required.
     this.text = text;
+
+    //Values are automatically supplied if none are provided.
 
     if (id) {
       this.id = id;
@@ -313,6 +359,7 @@ class Alert {
     }
   }
 
+  //The HTML method returns the HTML for the alert which is a div container that holds a span, for the text, and a button, for dismissal (or another action).
   get html(): string {
     return `<div class="alert" id="${this.id}">
       <span>${this.text}</span>
@@ -321,11 +368,13 @@ class Alert {
   }
 }
 
+//The State class is likely the most important class in this entire project. Its instances are responsible for storing the game's state as data which can be rendered onto the screen using one of its methods.
 class State {
-  allCards: Array<Card>;
+  //The history property stores an array of StateLogs which are used so far to undo moves made in the game.
   history: Array<StateLog> = [];
   gameEnded: boolean = false;
 
+  //These following properties actually organize where cards are in the game. The position of cards in these properties dictates how they are rendered in the UI.
   stockDeck: Deck;
   stockRevealedCards: Array<Card>;
   workingPiles: Array<Array<Card>>;
@@ -336,55 +385,40 @@ class State {
     diamonds: Array<Card>
   };
 
+  //The alerts properties stores an array of alerts which should be presented to the user.
   alerts: Array<Alert> = [];
 
+  //The only function of the constructor object in the State class is to call the object's resetState function which delegates the work of setting up the State.
   constructor() {
     this.resetState();
   }
 
+  //The loadState function loads another State object by copying each of its properties to those that correspond in the current State object.
   loadState(state: State) {
     for (const key in state) {
       this[key] = state[key];
     }
   }
 
-  static deepCopy<T>(source: T): T {
-    return Array.isArray(source)
-      ? source.map(item => this.deepCopy(item))
-      : source instanceof Date
-        ? new Date(source.getTime())
-        : source && typeof source === 'object'
-          ? Object.getOwnPropertyNames(source).reduce((o, prop) => {
-            Object.defineProperty(o, prop, Object.getOwnPropertyDescriptor(source, prop)!);
-            o[prop] = this.deepCopy((source as { [key: string]: any })[prop]);
-            return o;
-          }, Object.create(Object.getPrototypeOf(source)))
-          : source as T;
-  }
-
+  //The resetState function resets the state to its starting state, creating a new randomized setup for the game.
   resetState() {
+    //The gameEnded property is reset as a new game can't have ended off the bat.
     this.gameEnded = false;
 
+    //The stockDeck property is used as a drawing pool to fill all the other card storing properties.
     this.stockDeck = Deck.newDeck().shuffled();
 
-    this.allCards = [];
-
-    for (const card of this.stockDeck.cards) {
-      const reference = card;
-      this.allCards.push(reference);
-    }
-
+    //The stock revealed cards are reset as none should be present when the game starts.
     this.stockRevealedCards = [];
 
     let workingPiles: Array<Array<Card>> = [];
 
+    //For each working pile in the game, of which there are 7, one card is added to the pile from the stock deck for each integer value from 0 up to, but not including, the working pile's index value. What that means is that the first pile will only receive one card, and the seventh pile will receive seven cards.
     for (let iA = 1; iA < 8; iA++) {
       var pile = [];
 
       for (let iB = 0; iB < iA; iB++) {
-        let card = this.stockDeck.cards.pop()
-
-        pile.push(card);
+        pile.push(this.stockDeck.cards.pop());
       }
 
       workingPiles.push(pile);
@@ -392,6 +426,7 @@ class State {
 
     this.workingPiles = workingPiles;
 
+    //The foundationDecks object is initialized with each of its key's arrays empty as Solitaire starts with no cards in the foundation piles at the start.
     this.foundationDecks = {
       spades: new Array<Card>(),
       clubs: new Array<Card>(),
@@ -402,50 +437,63 @@ class State {
     this.alerts = [];
   }
 
+  //The forceUpdateUI method is the heavy hitter of the State object. It is responsible for rendering the current state's configuration in the UI. If a card is removed from one pile and added to another and the method is called, the method will update the UI to reflect that change.
   forceUpdateUI() {
+    //This anonymous function updates the UI to show alerts above the game on in the user interface. It is capable of showing multiple alerts at once.
     const updateForAlerts = () => {
       alerts.innerHTML = "";
 
+      //For each alert, the alerts html representation will be added to the alerts container element's content to display it on screen.
       for (const alert of this.alerts) {
         alerts.innerHTML += alert.html;
 
+        //If the alert that was just added was set to fadeOut when dismissed instead of just disappearing, an event listener is added to the alert's dismiss button which will cause it to fade out when dismissed.
         if (alert.fadeOut) {
           document.getElementById(alert.buttonId).addEventListener("click", () => {
+            //The fadeOut method is declared elsewhere.
             fadeOut(alert.id);
           });
         }
       }
     }
 
+    //The ParentNode.replaceChildren() is used further in this project's code. It is an alternative and convenient way of emptying a html elements innerHTML content.
     gameStockClothRevealedCards.replaceChildren();
 
+    //This iterative loop iterates over each cards in the stockRevealedCards property. If the card is the first/newest in the set, having an index of 0, it is displayed normally. Otherwise, the card is displayed with a lowered brightness and is not draggable/playable as per Solitaire's rules.
     this.stockRevealedCards.forEach((card, index) => {
       if (index === 0) {
-        gameStockClothRevealedCards.innerHTML += card.html + "\n";
+        gameStockClothRevealedCards.innerHTML += card.html;
       } else {
         const cardCopy = card.clone();
         cardCopy.draggable = false;
 
-        gameStockClothRevealedCards.innerHTML += cardCopy.html + "\n";
+        gameStockClothRevealedCards.innerHTML += cardCopy.html;
 
-        document.getElementById(cardCopy.id).style.opacity = "0.5";
+        document.getElementById(cardCopy.id).style.filter = "brightness(0.7)";
       }
     });
 
+    //This loop iterates through each of the working cloths piles' cards and displays their children accordingly.
     for (let i = 0; i < 7; i++) {
-      const pile = gameWorkingClothPiles.children[i];
-      pile.innerHTML = "";
-
+      //The cards variable is set to the cards corresponding to the current iteration's pile.
       const cards = this.workingPiles[i];
 
+      //If there are no cards in the pile, this function has no reason to continue executing its logic, and thus continues on to its next iteration.
       if (cards.length === 0) {
         continue;
       }
 
+      //The pile variable is set to the element corresponding to the current iteration.
+      const pile = gameWorkingClothPiles.children[i];
+      pile.replaceChildren();
+
+      //This loop cycles through each card in the current working pile. It will create a pile if the card is forced face up, and just a regular face-down card otherwise. The final card is always presented face-up.
       for (let i = 0, makeDragPile = false, pileId = ""; i < cards.length; i++) {
         const card = cards[i];
         let cardCopy = card.clone();
 
+        //This logic checks if a the loop is set to create a drag pile or not. If it is, it executes code to do so.
         if (makeDragPile === true) {
           if (card === cards[cards.length - 1]) {
             document.getElementById(pileId).innerHTML += card.html;

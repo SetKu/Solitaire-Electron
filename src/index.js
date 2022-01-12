@@ -1,7 +1,5 @@
 let uuid = require('uuid');
 var alerts = document.querySelector('.alerts');
-var game = document.querySelector('.game');
-var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothDeck = document.querySelector(".deck");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
 var gameWorkingClothPiles = document.querySelector('.game__working-cloth__piles');
@@ -58,14 +56,14 @@ var GamePositions;
     GamePositions[GamePositions["stockDeck"] = 12] = "stockDeck";
 })(GamePositions || (GamePositions = {}));
 class Card {
-    constructor(suit, value, idOverride) {
+    constructor(suit, value, id) {
         this.draggable = true;
         this.dropTarget = false;
         this.forceFaceUp = false;
         this.suit = suit;
         this.value = value;
-        if (idOverride) {
-            this.id = idOverride;
+        if (id) {
+            this.id = id;
         }
         else {
             this.id = uuid.v4();
@@ -168,12 +166,19 @@ function foundationDeckParentFor(key) {
 }
 class StateLog {
     constructor(state, id, timeDiscarded) {
-        this.state = new State();
-        let allCardsClone = [];
-        for (const card of state.allCards) {
-            allCardsClone.push(card.clone());
+        if (id) {
+            this.id = id;
         }
-        this.state.allCards = allCardsClone;
+        else {
+            this.id = uuid.v4();
+        }
+        if (timeDiscarded) {
+            this.timeDiscarded = timeDiscarded;
+        }
+        else {
+            this.timeDiscarded = new Date();
+        }
+        this.state = new State();
         let stockDeckCloneCards = [];
         for (const card of state.stockDeck.cards) {
             stockDeckCloneCards.push(card.clone());
@@ -205,18 +210,6 @@ class StateLog {
         this.state.foundationDecks = foundationDecksClone;
         this.state.history = state.history;
         this.state.gameEnded = state.gameEnded;
-        if (id) {
-            this.id = id;
-        }
-        else {
-            this.id = uuid.v4();
-        }
-        if (timeDiscarded) {
-            this.timeDiscarded = timeDiscarded;
-        }
-        else {
-            this.timeDiscarded = new Date();
-        }
     }
 }
 class Alert {
@@ -258,34 +251,15 @@ class State {
             this[key] = state[key];
         }
     }
-    static deepCopy(source) {
-        return Array.isArray(source)
-            ? source.map(item => this.deepCopy(item))
-            : source instanceof Date
-                ? new Date(source.getTime())
-                : source && typeof source === 'object'
-                    ? Object.getOwnPropertyNames(source).reduce((o, prop) => {
-                        Object.defineProperty(o, prop, Object.getOwnPropertyDescriptor(source, prop));
-                        o[prop] = this.deepCopy(source[prop]);
-                        return o;
-                    }, Object.create(Object.getPrototypeOf(source)))
-                    : source;
-    }
     resetState() {
         this.gameEnded = false;
         this.stockDeck = Deck.newDeck().shuffled();
-        this.allCards = [];
-        for (const card of this.stockDeck.cards) {
-            const reference = card;
-            this.allCards.push(reference);
-        }
         this.stockRevealedCards = [];
         let workingPiles = [];
         for (let iA = 1; iA < 8; iA++) {
             var pile = [];
             for (let iB = 0; iB < iA; iB++) {
-                let card = this.stockDeck.cards.pop();
-                pile.push(card);
+                pile.push(this.stockDeck.cards.pop());
             }
             workingPiles.push(pile);
         }
@@ -313,22 +287,22 @@ class State {
         gameStockClothRevealedCards.replaceChildren();
         this.stockRevealedCards.forEach((card, index) => {
             if (index === 0) {
-                gameStockClothRevealedCards.innerHTML += card.html + "\n";
+                gameStockClothRevealedCards.innerHTML += card.html;
             }
             else {
                 const cardCopy = card.clone();
                 cardCopy.draggable = false;
-                gameStockClothRevealedCards.innerHTML += cardCopy.html + "\n";
-                document.getElementById(cardCopy.id).style.opacity = "0.5";
+                gameStockClothRevealedCards.innerHTML += cardCopy.html;
+                document.getElementById(cardCopy.id).style.filter = "brightness(0.7)";
             }
         });
         for (let i = 0; i < 7; i++) {
-            const pile = gameWorkingClothPiles.children[i];
-            pile.innerHTML = "";
             const cards = this.workingPiles[i];
             if (cards.length === 0) {
                 continue;
             }
+            const pile = gameWorkingClothPiles.children[i];
+            pile.replaceChildren();
             for (let i = 0, makeDragPile = false, pileId = ""; i < cards.length; i++) {
                 const card = cards[i];
                 let cardCopy = card.clone();
@@ -530,6 +504,7 @@ gameControlsNewGame.addEventListener("click", () => {
 gameControlsUndo.addEventListener("click", () => {
     state.loadState(state.history[state.history.length - 1].state);
     state.history.splice(state.history.length - 1, 1);
+    state.gameEnded = checkGameStatus();
     state.forceUpdateUI();
 });
 function checkGameStatus() {
@@ -836,4 +811,3 @@ function checkMoveValidity(item, destination) {
     }
     return false;
 }
-export {};
