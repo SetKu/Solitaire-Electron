@@ -688,6 +688,7 @@ gameControlsNewGame.addEventListener("click", () => {
 gameControlsUndo.addEventListener("click", () => {
   state.loadState(state.history[state.history.length - 1].state);
   state.history.splice(state.history.length - 1, 1);
+  state.gameEnded = checkGameStatus();
   state.forceUpdateUI();
 });
 
