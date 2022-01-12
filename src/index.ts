@@ -10,6 +10,7 @@ var gameStockClothDeck = document.querySelector(".deck");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
 var gameWorkingClothPiles = document.querySelector('.game__working-cloth__piles');
 var gameControlsNewGame = document.querySelector('.game__controls__new-game');
+var gameControlsUndo = document.querySelector('.game__controls__undo');
 var gameFoundationCloth = document.querySelector('.game__foundation-cloth');
 var gameFoundationClothSpades = document.querySelector('.game__foundation-cloth__spades');
 var gameFoundationClothClubs = document.querySelector('.game__foundation-cloth__clubs');
@@ -217,7 +218,15 @@ class StateLog {
   timeDiscarded: Date;
 
   constructor(state: State, id?: string, timeDiscarded?: Date) {
-    this.state = state;
+    this.state = new State();
+
+    this.state.allCards = state.allCards;
+    this.state.stockDeck = state.stockDeck;
+    this.state.stockRevealedCards = state.stockRevealedCards;
+    this.state.workingPiles = state.workingPiles;
+    this.state.foundationDecks = state.foundationDecks;
+    this.state.history = state.history;
+    this.state.gameEnded = state.gameEnded;
 
     if (id) {
       this.id = id;
@@ -250,7 +259,12 @@ class State {
 
   constructor() {
     this.resetState();
-    this.history.push(new StateLog(this));
+  }
+
+  loadState(state: State) {
+    for (const key in state) {
+      this[key] = state[key];
+    }
   }
 
   resetState() {
@@ -479,47 +493,76 @@ class State {
     if (this.gameEnded) {
       setElementsState(true);
 
-      let id = uuid.v4();
-      let buttonId = uuid.v4();
-
-      deckSurface.innerHTML = `<div class="alert" id="${id}">
-        <span>Congratulations! You won the game.</span>
-        <button id="${buttonId}"><strong>X</strong></button>
-      </div>
-      ${deckSurface.innerHTML}`;
-
-      function fadeOut(id: string) {
-        document.getElementById(id).style.animationName = 'fadeOut';
-
-        const removeElement = () => {
-          document.getElementById(id).remove()
-        }
-
-        window.setTimeout(removeElement, 1000);
-      }
-
-      document.getElementById(buttonId).addEventListener("click", () => {
-        fadeOut(id);
-      });
+      const alert = new Alert("Congratulations! You won the game.")
+      alert.present();
     } else {
       setElementsState(false);
+    }
+
+    if (this.history.length === 0) {
+      (gameControlsUndo as HTMLElement).setAttribute("disabled", "false");
+      (gameControlsUndo as HTMLElement).classList.add("button-01--disabled");
+    } else {
+      (gameControlsUndo as HTMLElement).setAttribute("disabled", "true");
+      (gameControlsUndo as HTMLElement).classList.remove("button-01--disabled");
     }
 
     this.forceUpdateUICount++;
   }
 }
 
-let _state = new State();
-let state = new Proxy(_state, {
-  set: (object, prop, value) => {
-    object[prop] = value;
-    return true;
-  }
-});
-
+let state = new State();
 state.forceUpdateUI();
 
 /*** Functional Runtime Code ***/
+
+function fadeOut(id: string) {
+  document.getElementById(id).style.animationName = 'fadeOut';
+
+  const removeElement = () => {
+    document.getElementById(id).remove()
+  }
+
+  window.setTimeout(removeElement, 1000);
+}
+
+class Alert {
+  id: string;
+  buttonId: string;
+  text: string;
+  fadeOut: boolean = true;
+
+  constructor(text: string, id?: string, buttonId?: string) {
+    if (id) {
+      this.id = id;
+    } else {
+      this.id = uuid.v4();
+    }
+
+    if (buttonId) {
+      this.buttonId = buttonId;
+    } else {
+      this.buttonId = uuid.v4();
+    }
+  }
+
+  get html(): string {
+    return `<div class="alert" id="${this.id}">
+      <span>${this.text}</span>
+      <button id="${this.buttonId}"><strong>X</strong></button>
+    </div>`;
+  }
+
+  present() {
+    deckSurface.innerHTML = `${this.html}${deckSurface.innerHTML}`;
+
+    if (fadeOut) {
+      document.getElementById(this.buttonId).addEventListener("click", () => {
+        fadeOut(this.id);
+      });
+    }
+  }
+}
 
 function styleAllPiles() {
   const piles = document.getElementsByClassName("pile");
@@ -567,11 +610,30 @@ function clearFoundationDecksContent(): boolean {
 }
 
 //New game button functionality
+let newGameConfirmationCounter = 0;
 gameControlsNewGame.addEventListener("click", () => {
-  state.history.push(new StateLog(state));
-  state.resetState();
-  state.forceUpdateUI();
+  if (newGameConfirmationCounter === 0) {
+    //present alert banner and timer countdown
+
+    gameControlsNewGame.children.item(0).innerHTML = "Confirm";
+  } else {
+    state.history = [];
+
+    state.resetState();
+    state.forceUpdateUI();
+  }
+
+  newGameConfirmationCounter++;
 });
+
+function undoMove() {
+  state.loadState(state.history[state.history.length - 1].state);
+  state.forceUpdateUI();
+  console.log(state);
+}
+
+//Undo button functionality
+gameControlsUndo.addEventListener("click", undoMove);
 
 /** Game Logic **/
 

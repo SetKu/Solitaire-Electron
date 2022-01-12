@@ -6,6 +6,7 @@ var gameStockClothDeck = document.querySelector(".deck");
 var gameStockClothRevealedCards = document.querySelector('.game__stock-cloth__revealed-cards');
 var gameWorkingClothPiles = document.querySelector('.game__working-cloth__piles');
 var gameControlsNewGame = document.querySelector('.game__controls__new-game');
+var gameControlsUndo = document.querySelector('.game__controls__undo');
 var gameFoundationCloth = document.querySelector('.game__foundation-cloth');
 var gameFoundationClothSpades = document.querySelector('.game__foundation-cloth__spades');
 var gameFoundationClothClubs = document.querySelector('.game__foundation-cloth__clubs');
@@ -167,7 +168,14 @@ function foundationDeckParentFor(key) {
 }
 class StateLog {
     constructor(state, id, timeDiscarded) {
-        this.state = state;
+        this.state = new State();
+        this.state.allCards = state.allCards;
+        this.state.stockDeck = state.stockDeck;
+        this.state.stockRevealedCards = state.stockRevealedCards;
+        this.state.workingPiles = state.workingPiles;
+        this.state.foundationDecks = state.foundationDecks;
+        this.state.history = state.history;
+        this.state.gameEnded = state.gameEnded;
         if (id) {
             this.id = id;
         }
@@ -188,7 +196,11 @@ class State {
         this.gameEnded = false;
         this.forceUpdateUICount = 0;
         this.resetState();
-        this.history.push(new StateLog(this));
+    }
+    loadState(state) {
+        for (const key in state) {
+            this[key] = state[key];
+        }
     }
     resetState() {
         this.gameEnded = false;
@@ -372,38 +384,63 @@ class State {
         };
         if (this.gameEnded) {
             setElementsState(true);
-            let id = uuid.v4();
-            let buttonId = uuid.v4();
-            deckSurface.innerHTML = `<div class="alert" id="${id}">
-        <span>Congratulations! You won the game.</span>
-        <button id="${buttonId}"><strong>X</strong></button>
-      </div>
-      ${deckSurface.innerHTML}`;
-            function fadeOut(id) {
-                document.getElementById(id).style.animationName = 'fadeOut';
-                const removeElement = () => {
-                    document.getElementById(id).remove();
-                };
-                window.setTimeout(removeElement, 1000);
-            }
-            document.getElementById(buttonId).addEventListener("click", () => {
-                fadeOut(id);
-            });
+            const alert = new Alert("Congratulations! You won the game.");
+            alert.present();
         }
         else {
             setElementsState(false);
         }
+        if (this.history.length === 0) {
+            gameControlsUndo.setAttribute("disabled", "false");
+            gameControlsUndo.classList.add("button-01--disabled");
+        }
+        else {
+            gameControlsUndo.setAttribute("disabled", "true");
+            gameControlsUndo.classList.remove("button-01--disabled");
+        }
         this.forceUpdateUICount++;
     }
 }
-let _state = new State();
-let state = new Proxy(_state, {
-    set: (object, prop, value) => {
-        object[prop] = value;
-        return true;
-    }
-});
+let state = new State();
 state.forceUpdateUI();
+function fadeOut(id) {
+    document.getElementById(id).style.animationName = 'fadeOut';
+    const removeElement = () => {
+        document.getElementById(id).remove();
+    };
+    window.setTimeout(removeElement, 1000);
+}
+class Alert {
+    constructor(text, id, buttonId) {
+        this.fadeOut = true;
+        if (id) {
+            this.id = id;
+        }
+        else {
+            this.id = uuid.v4();
+        }
+        if (buttonId) {
+            this.buttonId = buttonId;
+        }
+        else {
+            this.buttonId = uuid.v4();
+        }
+    }
+    get html() {
+        return `<div class="alert" id="${this.id}">
+      <span>${this.text}</span>
+      <button id="${this.buttonId}"><strong>X</strong></button>
+    </div>`;
+    }
+    present() {
+        deckSurface.innerHTML = `${this.html}${deckSurface.innerHTML}`;
+        if (fadeOut) {
+            document.getElementById(this.buttonId).addEventListener("click", () => {
+                fadeOut(this.id);
+            });
+        }
+    }
+}
 function styleAllPiles() {
     const piles = document.getElementsByClassName("pile");
     const forceFaceUpPiles = document.getElementsByClassName("game__working-cloth__face-up-pile");
@@ -441,11 +478,24 @@ function clearFoundationDecksContent() {
     }
     return successful;
 }
+let newGameConfirmationCounter = 0;
 gameControlsNewGame.addEventListener("click", () => {
-    state.history.push(new StateLog(state));
-    state.resetState();
-    state.forceUpdateUI();
+    if (newGameConfirmationCounter === 0) {
+        gameControlsNewGame.children.item(0).innerHTML = "Confirm";
+    }
+    else {
+        state.history = [];
+        state.resetState();
+        state.forceUpdateUI();
+    }
+    newGameConfirmationCounter++;
 });
+function undoMove() {
+    state.loadState(state.history[state.history.length - 1].state);
+    state.forceUpdateUI();
+    console.log(state);
+}
+gameControlsUndo.addEventListener("click", undoMove);
 function checkGameStatus() {
     let tally = 0;
     for (const key in state.foundationDecks) {
