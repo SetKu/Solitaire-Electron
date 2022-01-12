@@ -1,3 +1,5 @@
+import { stat } from "fs/promises";
+
 let uuid = require('uuid');
 //The TS compiler knows node's require function will return the any type with the help of the npm @types/node package.
 
@@ -120,7 +122,6 @@ class Card {
   }
 
   static faceDownHTML = `<div class="card--face-down"></div>`
-  // static invisibleDropTargetHTML = `<div class="card--invisible drop-target">`
 
   clone(): Card {
     let newCard = new Card(this.suit, this.value, this.id);
@@ -220,13 +221,57 @@ class StateLog {
   constructor(state: State, id?: string, timeDiscarded?: Date) {
     this.state = new State();
 
-    this.state.allCards = JSON.parse(JSON.stringify(state.allCards));
-    this.state.stockDeck = JSON.parse(JSON.stringify(state.stockDeck));
-    this.state.stockRevealedCards = JSON.parse(JSON.stringify(state.stockRevealedCards));
-    this.state.workingPiles = JSON.parse(JSON.stringify(state.workingPiles));
-    this.state.foundationDecks = JSON.parse(JSON.stringify(state.foundationDecks));
-    this.state.history = JSON.parse(JSON.stringify(state.history));
-    this.state.gameEnded = JSON.parse(JSON.stringify(state.gameEnded));
+    let allCardsClone = [];
+
+    for (const card of state.allCards) {
+      allCardsClone.push(card.clone());
+    }
+
+    this.state.allCards = allCardsClone;
+
+    let stockDeckCloneCards = [];
+
+    for (const card of state.stockDeck.cards) {
+      stockDeckCloneCards.push(card.clone());
+    }
+
+    this.state.stockDeck = new Deck(stockDeckCloneCards);
+
+    let stockRevealedCardsClone = [];
+
+    for (const card of state.stockRevealedCards) {
+      stockRevealedCardsClone.push(card.clone());
+    }
+
+    this.state.stockRevealedCards = stockRevealedCardsClone;
+
+    let workingPilesClone = [[], [], [], [], [], [], []];
+
+    for (let i = 0; i < workingPilesClone.length; i++) {
+      for (const card of state.workingPiles[i]) {
+        workingPilesClone[i].push(card.clone());
+      }
+    }
+
+    this.state.workingPiles = workingPilesClone;
+
+    let foundationDecksClone = {
+      spades: [],
+      clubs: [],
+      hearts: [],
+      diamonds: []
+    }
+
+    for (const key in foundationDecksClone) {
+      for (const card of state.foundationDecks[key]) {
+        foundationDecksClone[key].push(card.clone());
+      }
+    }
+
+    this.state.foundationDecks = foundationDecksClone;
+
+    this.state.history = state.history;
+    this.state.gameEnded = state.gameEnded;
 
     if (id) {
       this.id = id;
@@ -248,7 +293,9 @@ class Alert {
   text: string;
   fadeOut: boolean = true;
 
-  constructor(text: string, id?: string, buttonId?: string) {
+  constructor(text: string, id?: string, buttonId?: string, fadeOut?: boolean) {
+    this.text = text;
+
     if (id) {
       this.id = id;
     } else {
@@ -259,6 +306,10 @@ class Alert {
       this.buttonId = buttonId;
     } else {
       this.buttonId = uuid.v4();
+    }
+
+    if (fadeOut) {
+      this.fadeOut = fadeOut;
     }
   }
 
@@ -351,35 +402,18 @@ class State {
     this.alerts = [];
   }
 
-  private forceUpdateUICount = 0;
-
   forceUpdateUI() {
-    if (this.forceUpdateUICount < 1) {
-      //Deck click logic
-      gameStockClothDeck.addEventListener("click", (event) => {
-        const sRC = state.stockRevealedCards;
-        const sDC = state.stockDeck.cards;
+    const updateForAlerts = () => {
+      alerts.innerHTML = "";
 
-        if (sRC.length < 3) {
-          sRC.unshift(sDC.pop());
-        } else {
-          sDC.unshift(sRC.pop());
-          sRC.unshift(sDC.pop());
+      for (const alert of this.alerts) {
+        alerts.innerHTML += alert.html;
+
+        if (alert.fadeOut) {
+          document.getElementById(alert.buttonId).addEventListener("click", () => {
+            fadeOut(alert.id);
+          });
         }
-
-        state.forceUpdateUI();
-      });
-    }
-
-    alerts.innerHTML = "";
-
-    for (const alert of this.alerts) {
-      alerts.innerHTML += alert.html;
-
-      if (alert.fadeOut) {
-        document.getElementById(alert.buttonId).addEventListener("click", () => {
-          fadeOut(alert.id);
-        });
       }
     }
 
@@ -547,8 +581,9 @@ class State {
 
       const alertText = "Congratulations! You won the game."
 
-      if (!(this.alerts.filter(element => element.text === alertText).length > 0)) {
+      if (this.alerts.filter(element => { return element.text === alertText }).length === 0) {
         this.alerts.push(new Alert(alertText));
+        updateForAlerts();
       }
     } else {
       setElementStates(false);
@@ -561,8 +596,6 @@ class State {
       (gameControlsUndo as HTMLInputElement).disabled = false;
       (gameControlsUndo as HTMLElement).classList.remove("disabled");
     }
-
-    this.forceUpdateUICount++;
   }
 }
 
@@ -626,6 +659,23 @@ function clearFoundationDecksContent(): boolean {
   return successful;
 }
 
+//Deck click logic
+gameStockClothDeck.addEventListener("click", (event) => {
+  state.history.push(new StateLog(state));
+
+  const sRC = state.stockRevealedCards;
+  const sDC = state.stockDeck.cards;
+
+  if (sRC.length < 3) {
+    sRC.unshift(sDC.pop());
+  } else {
+    sDC.unshift(sRC.pop());
+    sRC.unshift(sDC.pop());
+  }
+
+  state.forceUpdateUI();
+});
+
 //New game button functionality
 gameControlsNewGame.addEventListener("click", () => {
   state.history = [];
@@ -637,6 +687,7 @@ gameControlsNewGame.addEventListener("click", () => {
 //Undo button functionality
 gameControlsUndo.addEventListener("click", () => {
   state.loadState(state.history[state.history.length - 1].state);
+  state.history.splice(state.history.length - 1, 1);
   state.forceUpdateUI();
 });
 
@@ -834,11 +885,8 @@ function moveItem(item: Card | Pile, destination: GamePositions) {
 
       state.workingPiles[destination - 1][state.workingPiles[destination - 1].length - 1].forceFaceUp = true;
       state.workingPiles[destination - 1].push(card);
-      console.log("Working pile added to:", state.workingPiles[destination - 1]);
     } else if (destination > 7 && destination < 12) {
       card.dropTarget = true;
-
-      console.log("destination is foundation deck... activating switch");
 
       switch (destination) {
         case GamePositions.foundationDeckClubs:
@@ -860,7 +908,6 @@ function moveItem(item: Card | Pile, destination: GamePositions) {
       for (let i = 0; i < 3; i++) {
         if (gameStockClothRevealedCards.children.item(i) === cardElement) {
           state.stockRevealedCards.splice(i, 1);
-          console.log("spliced");
         }
       }
     } else if (origin > 0 && origin < 8) {
@@ -906,8 +953,6 @@ function checkMoveValidity(item: Card | Pile, destination: GamePositions): boole
   }
 
   if (item instanceof Card) {
-    console.log("item is card");
-
     const card = item as Card;
 
     const cardElement = document.getElementById(card.id);
@@ -946,7 +991,6 @@ function checkMoveValidity(item: Card | Pile, destination: GamePositions): boole
     }
 
     if (destination > 0 && destination < 8) {
-      console.log("here");
       const pile = state.workingPiles[destination - 1];
 
       if (pile.length == 0) {
@@ -960,8 +1004,6 @@ function checkMoveValidity(item: Card | Pile, destination: GamePositions): boole
       }
     }
   } else {
-    console.log("item is pile");
-
     if (destination > 0 && destination < 8) {
       const workingPile = state.workingPiles[destination - 1];
 

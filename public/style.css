@@ -260,18 +260,19 @@ body {
   width: 90vw;
   padding: 1rem 5vw;
   background-color: #585858;
+  color: whitesmoke;
 }
 
-.footer {
+.footer a {
   color: whitesmoke;
 }
 
 .footer a:hover {
-  filter: brightness(1.5);
+  color: rgb(231, 167, 46);
 }
 
 .footer a:visited {
-  color: rgb(200, 200, 200);
+  filter: sepia(1.0);
 }
 
 @media only screen and (max-width: 830px) {

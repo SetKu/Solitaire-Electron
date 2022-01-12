@@ -169,13 +169,42 @@ function foundationDeckParentFor(key) {
 class StateLog {
     constructor(state, id, timeDiscarded) {
         this.state = new State();
-        this.state.allCards = JSON.parse(JSON.stringify(state.allCards));
-        this.state.stockDeck = JSON.parse(JSON.stringify(state.stockDeck));
-        this.state.stockRevealedCards = JSON.parse(JSON.stringify(state.stockRevealedCards));
-        this.state.workingPiles = JSON.parse(JSON.stringify(state.workingPiles));
-        this.state.foundationDecks = JSON.parse(JSON.stringify(state.foundationDecks));
-        this.state.history = JSON.parse(JSON.stringify(state.history));
-        this.state.gameEnded = JSON.parse(JSON.stringify(state.gameEnded));
+        let allCardsClone = [];
+        for (const card of state.allCards) {
+            allCardsClone.push(card.clone());
+        }
+        this.state.allCards = allCardsClone;
+        let stockDeckCloneCards = [];
+        for (const card of state.stockDeck.cards) {
+            stockDeckCloneCards.push(card.clone());
+        }
+        this.state.stockDeck = new Deck(stockDeckCloneCards);
+        let stockRevealedCardsClone = [];
+        for (const card of state.stockRevealedCards) {
+            stockRevealedCardsClone.push(card.clone());
+        }
+        this.state.stockRevealedCards = stockRevealedCardsClone;
+        let workingPilesClone = [[], [], [], [], [], [], []];
+        for (let i = 0; i < workingPilesClone.length; i++) {
+            for (const card of state.workingPiles[i]) {
+                workingPilesClone[i].push(card.clone());
+            }
+        }
+        this.state.workingPiles = workingPilesClone;
+        let foundationDecksClone = {
+            spades: [],
+            clubs: [],
+            hearts: [],
+            diamonds: []
+        };
+        for (const key in foundationDecksClone) {
+            for (const card of state.foundationDecks[key]) {
+                foundationDecksClone[key].push(card.clone());
+            }
+        }
+        this.state.foundationDecks = foundationDecksClone;
+        this.state.history = state.history;
+        this.state.gameEnded = state.gameEnded;
         if (id) {
             this.id = id;
         }
@@ -191,8 +220,9 @@ class StateLog {
     }
 }
 class Alert {
-    constructor(text, id, buttonId) {
+    constructor(text, id, buttonId, fadeOut) {
         this.fadeOut = true;
+        this.text = text;
         if (id) {
             this.id = id;
         }
@@ -204,6 +234,9 @@ class Alert {
         }
         else {
             this.buttonId = uuid.v4();
+        }
+        if (fadeOut) {
+            this.fadeOut = fadeOut;
         }
     }
     get html() {
@@ -218,7 +251,6 @@ class State {
         this.history = [];
         this.gameEnded = false;
         this.alerts = [];
-        this.forceUpdateUICount = 0;
         this.resetState();
     }
     loadState(state) {
@@ -267,29 +299,17 @@ class State {
         this.alerts = [];
     }
     forceUpdateUI() {
-        if (this.forceUpdateUICount < 1) {
-            gameStockClothDeck.addEventListener("click", (event) => {
-                const sRC = state.stockRevealedCards;
-                const sDC = state.stockDeck.cards;
-                if (sRC.length < 3) {
-                    sRC.unshift(sDC.pop());
+        const updateForAlerts = () => {
+            alerts.innerHTML = "";
+            for (const alert of this.alerts) {
+                alerts.innerHTML += alert.html;
+                if (alert.fadeOut) {
+                    document.getElementById(alert.buttonId).addEventListener("click", () => {
+                        fadeOut(alert.id);
+                    });
                 }
-                else {
-                    sDC.unshift(sRC.pop());
-                    sRC.unshift(sDC.pop());
-                }
-                state.forceUpdateUI();
-            });
-        }
-        alerts.innerHTML = "";
-        for (const alert of this.alerts) {
-            alerts.innerHTML += alert.html;
-            if (alert.fadeOut) {
-                document.getElementById(alert.buttonId).addEventListener("click", () => {
-                    fadeOut(alert.id);
-                });
             }
-        }
+        };
         gameStockClothRevealedCards.replaceChildren();
         this.stockRevealedCards.forEach((card, index) => {
             if (index === 0) {
@@ -425,8 +445,9 @@ class State {
         if (this.gameEnded) {
             setElementStates(true);
             const alertText = "Congratulations! You won the game.";
-            if (!(this.alerts.filter(element => element.text === alertText).length > 0)) {
+            if (this.alerts.filter(element => { return element.text === alertText; }).length === 0) {
                 this.alerts.push(new Alert(alertText));
+                updateForAlerts();
             }
         }
         else {
@@ -440,7 +461,6 @@ class State {
             gameControlsUndo.disabled = false;
             gameControlsUndo.classList.remove("disabled");
         }
-        this.forceUpdateUICount++;
     }
 }
 let state = new State();
@@ -489,6 +509,19 @@ function clearFoundationDecksContent() {
     }
     return successful;
 }
+gameStockClothDeck.addEventListener("click", (event) => {
+    state.history.push(new StateLog(state));
+    const sRC = state.stockRevealedCards;
+    const sDC = state.stockDeck.cards;
+    if (sRC.length < 3) {
+        sRC.unshift(sDC.pop());
+    }
+    else {
+        sDC.unshift(sRC.pop());
+        sRC.unshift(sDC.pop());
+    }
+    state.forceUpdateUI();
+});
 gameControlsNewGame.addEventListener("click", () => {
     state.history = [];
     state.resetState();
@@ -496,6 +529,7 @@ gameControlsNewGame.addEventListener("click", () => {
 });
 gameControlsUndo.addEventListener("click", () => {
     state.loadState(state.history[state.history.length - 1].state);
+    state.history.splice(state.history.length - 1, 1);
     state.forceUpdateUI();
 });
 function checkGameStatus() {
@@ -677,11 +711,9 @@ function moveItem(item, destination) {
             card.dropTarget = false;
             state.workingPiles[destination - 1][state.workingPiles[destination - 1].length - 1].forceFaceUp = true;
             state.workingPiles[destination - 1].push(card);
-            console.log("Working pile added to:", state.workingPiles[destination - 1]);
         }
         else if (destination > 7 && destination < 12) {
             card.dropTarget = true;
-            console.log("destination is foundation deck... activating switch");
             switch (destination) {
                 case GamePositions.foundationDeckClubs:
                     state.foundationDecks.clubs.push(card);
@@ -700,7 +732,6 @@ function moveItem(item, destination) {
             for (let i = 0; i < 3; i++) {
                 if (gameStockClothRevealedCards.children.item(i) === cardElement) {
                     state.stockRevealedCards.splice(i, 1);
-                    console.log("spliced");
                 }
             }
         }
@@ -743,7 +774,6 @@ function checkMoveValidity(item, destination) {
         return false;
     }
     if (item instanceof Card) {
-        console.log("item is card");
         const card = item;
         const cardElement = document.getElementById(card.id);
         if (gamePositionForElement(cardElement) == destination) {
@@ -777,7 +807,6 @@ function checkMoveValidity(item, destination) {
             }
         }
         if (destination > 0 && destination < 8) {
-            console.log("here");
             const pile = state.workingPiles[destination - 1];
             if (pile.length == 0) {
                 return false;
@@ -789,7 +818,6 @@ function checkMoveValidity(item, destination) {
         }
     }
     else {
-        console.log("item is pile");
         if (destination > 0 && destination < 8) {
             const workingPile = state.workingPiles[destination - 1];
             if (workingPile.length == 0) {
@@ -808,3 +836,4 @@ function checkMoveValidity(item, destination) {
     }
     return false;
 }
+export {};
