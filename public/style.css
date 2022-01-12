@@ -235,13 +235,14 @@ body {
   transition-duration: 0.15s;
 }
 
-.button-01--disabled:hover {
-  background: unset;
+.button-01.disabled:hover {
+  transition-property: none !important;
+  background: #FCFCFD;
 }
 
-.button-01:active {
-  filter: unset !important;
-  transform: unset !important;
+.button-01.disabled:active {
+  filter: none !important;
+  transform: none !important;
 }
 
 .button-01:hover {

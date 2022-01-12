@@ -3,7 +3,7 @@ let uuid = require('uuid');
 
 /*** Static Elements ***/
 
-var deckSurface = document.querySelector(".deck-surface")
+var alerts = document.querySelector('.alerts');
 var game = document.querySelector('.game');
 var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothDeck = document.querySelector(".deck");
@@ -220,13 +220,13 @@ class StateLog {
   constructor(state: State, id?: string, timeDiscarded?: Date) {
     this.state = new State();
 
-    this.state.allCards = state.allCards;
-    this.state.stockDeck = state.stockDeck;
-    this.state.stockRevealedCards = state.stockRevealedCards;
-    this.state.workingPiles = state.workingPiles;
-    this.state.foundationDecks = state.foundationDecks;
-    this.state.history = state.history;
-    this.state.gameEnded = state.gameEnded;
+    this.state.allCards = JSON.parse(JSON.stringify(state.allCards));
+    this.state.stockDeck = JSON.parse(JSON.stringify(state.stockDeck));
+    this.state.stockRevealedCards = JSON.parse(JSON.stringify(state.stockRevealedCards));
+    this.state.workingPiles = JSON.parse(JSON.stringify(state.workingPiles));
+    this.state.foundationDecks = JSON.parse(JSON.stringify(state.foundationDecks));
+    this.state.history = JSON.parse(JSON.stringify(state.history));
+    this.state.gameEnded = JSON.parse(JSON.stringify(state.gameEnded));
 
     if (id) {
       this.id = id;
@@ -239,6 +239,34 @@ class StateLog {
     } else {
       this.timeDiscarded = new Date();
     }
+  }
+}
+
+class Alert {
+  id: string;
+  buttonId: string;
+  text: string;
+  fadeOut: boolean = true;
+
+  constructor(text: string, id?: string, buttonId?: string) {
+    if (id) {
+      this.id = id;
+    } else {
+      this.id = uuid.v4();
+    }
+
+    if (buttonId) {
+      this.buttonId = buttonId;
+    } else {
+      this.buttonId = uuid.v4();
+    }
+  }
+
+  get html(): string {
+    return `<div class="alert" id="${this.id}">
+      <span>${this.text}</span>
+      <button id="${this.buttonId}"><strong>X</strong></button>
+    </div>`;
   }
 }
 
@@ -257,6 +285,8 @@ class State {
     diamonds: Array<Card>
   };
 
+  alerts: Array<Alert> = [];
+
   constructor() {
     this.resetState();
   }
@@ -265,6 +295,20 @@ class State {
     for (const key in state) {
       this[key] = state[key];
     }
+  }
+
+  static deepCopy<T>(source: T): T {
+    return Array.isArray(source)
+      ? source.map(item => this.deepCopy(item))
+      : source instanceof Date
+        ? new Date(source.getTime())
+        : source && typeof source === 'object'
+          ? Object.getOwnPropertyNames(source).reduce((o, prop) => {
+            Object.defineProperty(o, prop, Object.getOwnPropertyDescriptor(source, prop)!);
+            o[prop] = this.deepCopy((source as { [key: string]: any })[prop]);
+            return o;
+          }, Object.create(Object.getPrototypeOf(source)))
+          : source as T;
   }
 
   resetState() {
@@ -303,6 +347,8 @@ class State {
       hearts: new Array<Card>(),
       diamonds: new Array<Card>()
     };
+
+    this.alerts = [];
   }
 
   private forceUpdateUICount = 0;
@@ -323,6 +369,18 @@ class State {
 
         state.forceUpdateUI();
       });
+    }
+
+    alerts.innerHTML = "";
+
+    for (const alert of this.alerts) {
+      alerts.innerHTML += alert.html;
+
+      if (alert.fadeOut) {
+        document.getElementById(alert.buttonId).addEventListener("click", () => {
+          fadeOut(alert.id);
+        });
+      }
     }
 
     gameStockClothRevealedCards.replaceChildren();
@@ -394,25 +452,21 @@ class State {
     const cards = document.getElementsByClassName("card");
     const piles = document.getElementsByClassName("game__working-cloth__face-up-pile");
 
+    const dragStartActions = (event: DragEvent) => {
+      event.dataTransfer.setData("id", (event.target as Element).id);
+      event.dataTransfer.setData("element", (event.target as Element).toString());
+    }
+
     for (let i = 0; i < cards.length; i++) {
       const card = cards.item(i);
 
-      card.addEventListener("dragstart", (event: DragEvent) => {
-        event.dataTransfer.setData("id", (event.target as Element).id);
-        console.log("Setting dragEvent id property to (event.target as Element).id: " + (event.target as Element).id);
-        console.log("(event.target as Element):\n", (event.target as Element));
-      });
+      card.addEventListener("dragstart", dragStartActions);
     }
 
     for (let i = 0; i < piles.length; i++) {
       const pile = piles.item(i);
 
-      pile.addEventListener("dragstart", (event: DragEvent) => {
-        event.dataTransfer.setData("id", (event.target as Element).id);
-        event.dataTransfer.setData("element", (event.target as Element).toString());
-        console.log("Setting dragEvent id property to (event.target as Element).id: " + (event.target as Element).id);
-        console.log("(event.target as Element):\n", (event.target as Element));
-      });
+      pile.addEventListener("dragstart", dragStartActions);
     }
 
     const dropTargets = document.getElementsByClassName("drop-target");
@@ -434,16 +488,10 @@ class State {
         let dragItem: Card | Pile;
 
         if (dragElement === null) {
-          console.log("dragElement is null!");
-          console.log("dropTarget is", dropTarget);
-          console.log("id is", id);
-          console.log("dataTransfer.getData.('element') is", event.dataTransfer.getData("element"));
-          console.trace();
+          throw new Error(`dragElement was null: dataTransfer.getData.('element') is ${event.dataTransfer.getData("element")}`);
         }
 
         if (dragElement.classList.contains("game__working-cloth__face-up-pile")) {
-          console.log("dragged element is pile");
-
           let cards: Array<Card> = [];
 
           for (let i = 0; i < dragElement.children.length; i++) {
@@ -467,44 +515,51 @@ class State {
       });
     }
 
-    const setElementsState = (state: boolean) => {
+    const setElementStates = (state: boolean) => {
       const cards = document.getElementsByClassName("card");
       const decks = document.getElementsByClassName("deck");
 
+      const setPointerEvents = (iterator: number, value: string) => {
+        (cards.item(iterator) as HTMLElement).style.pointerEvents = value;
+      }
+
       if (state === true) {
         for (let i = 0; i < cards.length; i++) {
-          (cards.item(i) as HTMLElement).style.pointerEvents = "none";
+          setPointerEvents(i, "none");
         }
 
         for (let i = 0; i < decks.length; i++) {
-          (decks.item(i) as HTMLElement).style.pointerEvents = "none";
+          setPointerEvents(i, "none");
         }
       } else {
         for (let i = 0; i < cards.length; i++) {
-          (cards.item(i) as HTMLElement).style.pointerEvents = "auto";
+          setPointerEvents(i, "auto");
         }
 
         for (let i = 0; i < decks.length; i++) {
-          (decks.item(i) as HTMLElement).style.pointerEvents = "auto";
+          setPointerEvents(i, "auto");
         }
       }
     }
 
     if (this.gameEnded) {
-      setElementsState(true);
+      setElementStates(true);
 
-      const alert = new Alert("Congratulations! You won the game.")
-      alert.present();
+      const alertText = "Congratulations! You won the game."
+
+      if (!(this.alerts.filter(element => element.text === alertText).length > 0)) {
+        this.alerts.push(new Alert(alertText));
+      }
     } else {
-      setElementsState(false);
+      setElementStates(false);
     }
 
     if (this.history.length === 0) {
-      (gameControlsUndo as HTMLElement).setAttribute("disabled", "false");
-      (gameControlsUndo as HTMLElement).classList.add("button-01--disabled");
+      (gameControlsUndo as HTMLInputElement).disabled = true;
+      (gameControlsUndo as HTMLElement).classList.add("disabled");
     } else {
-      (gameControlsUndo as HTMLElement).setAttribute("disabled", "true");
-      (gameControlsUndo as HTMLElement).classList.remove("button-01--disabled");
+      (gameControlsUndo as HTMLInputElement).disabled = false;
+      (gameControlsUndo as HTMLElement).classList.remove("disabled");
     }
 
     this.forceUpdateUICount++;
@@ -524,44 +579,6 @@ function fadeOut(id: string) {
   }
 
   window.setTimeout(removeElement, 1000);
-}
-
-class Alert {
-  id: string;
-  buttonId: string;
-  text: string;
-  fadeOut: boolean = true;
-
-  constructor(text: string, id?: string, buttonId?: string) {
-    if (id) {
-      this.id = id;
-    } else {
-      this.id = uuid.v4();
-    }
-
-    if (buttonId) {
-      this.buttonId = buttonId;
-    } else {
-      this.buttonId = uuid.v4();
-    }
-  }
-
-  get html(): string {
-    return `<div class="alert" id="${this.id}">
-      <span>${this.text}</span>
-      <button id="${this.buttonId}"><strong>X</strong></button>
-    </div>`;
-  }
-
-  present() {
-    deckSurface.innerHTML = `${this.html}${deckSurface.innerHTML}`;
-
-    if (fadeOut) {
-      document.getElementById(this.buttonId).addEventListener("click", () => {
-        fadeOut(this.id);
-      });
-    }
-  }
 }
 
 function styleAllPiles() {
@@ -610,30 +627,18 @@ function clearFoundationDecksContent(): boolean {
 }
 
 //New game button functionality
-let newGameConfirmationCounter = 0;
 gameControlsNewGame.addEventListener("click", () => {
-  if (newGameConfirmationCounter === 0) {
-    //present alert banner and timer countdown
+  state.history = [];
 
-    gameControlsNewGame.children.item(0).innerHTML = "Confirm";
-  } else {
-    state.history = [];
-
-    state.resetState();
-    state.forceUpdateUI();
-  }
-
-  newGameConfirmationCounter++;
+  state.resetState();
+  state.forceUpdateUI();
 });
 
-function undoMove() {
+//Undo button functionality
+gameControlsUndo.addEventListener("click", () => {
   state.loadState(state.history[state.history.length - 1].state);
   state.forceUpdateUI();
-  console.log(state);
-}
-
-//Undo button functionality
-gameControlsUndo.addEventListener("click", undoMove);
+});
 
 /** Game Logic **/
 
@@ -978,13 +983,3 @@ function checkMoveValidity(item: Card | Pile, destination: GamePositions): boole
 
   return false;
 }
-
-// function checkForAnyValidMove() {
-//   for (const card of state.stockDeck.cards) {
-//     for (let dest = 0; dest < 12; dest++) {
-//       console.log(dest);
-//     }
-//   }
-// }
-
-// console.log(GamePositions);

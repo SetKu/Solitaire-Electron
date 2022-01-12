@@ -1,5 +1,5 @@
 let uuid = require('uuid');
-var deckSurface = document.querySelector(".deck-surface");
+var alerts = document.querySelector('.alerts');
 var game = document.querySelector('.game');
 var gameStockCloth = document.querySelector(".game__stock-cloth");
 var gameStockClothDeck = document.querySelector(".deck");
@@ -169,13 +169,13 @@ function foundationDeckParentFor(key) {
 class StateLog {
     constructor(state, id, timeDiscarded) {
         this.state = new State();
-        this.state.allCards = state.allCards;
-        this.state.stockDeck = state.stockDeck;
-        this.state.stockRevealedCards = state.stockRevealedCards;
-        this.state.workingPiles = state.workingPiles;
-        this.state.foundationDecks = state.foundationDecks;
-        this.state.history = state.history;
-        this.state.gameEnded = state.gameEnded;
+        this.state.allCards = JSON.parse(JSON.stringify(state.allCards));
+        this.state.stockDeck = JSON.parse(JSON.stringify(state.stockDeck));
+        this.state.stockRevealedCards = JSON.parse(JSON.stringify(state.stockRevealedCards));
+        this.state.workingPiles = JSON.parse(JSON.stringify(state.workingPiles));
+        this.state.foundationDecks = JSON.parse(JSON.stringify(state.foundationDecks));
+        this.state.history = JSON.parse(JSON.stringify(state.history));
+        this.state.gameEnded = JSON.parse(JSON.stringify(state.gameEnded));
         if (id) {
             this.id = id;
         }
@@ -190,10 +190,34 @@ class StateLog {
         }
     }
 }
+class Alert {
+    constructor(text, id, buttonId) {
+        this.fadeOut = true;
+        if (id) {
+            this.id = id;
+        }
+        else {
+            this.id = uuid.v4();
+        }
+        if (buttonId) {
+            this.buttonId = buttonId;
+        }
+        else {
+            this.buttonId = uuid.v4();
+        }
+    }
+    get html() {
+        return `<div class="alert" id="${this.id}">
+      <span>${this.text}</span>
+      <button id="${this.buttonId}"><strong>X</strong></button>
+    </div>`;
+    }
+}
 class State {
     constructor() {
         this.history = [];
         this.gameEnded = false;
+        this.alerts = [];
         this.forceUpdateUICount = 0;
         this.resetState();
     }
@@ -201,6 +225,19 @@ class State {
         for (const key in state) {
             this[key] = state[key];
         }
+    }
+    static deepCopy(source) {
+        return Array.isArray(source)
+            ? source.map(item => this.deepCopy(item))
+            : source instanceof Date
+                ? new Date(source.getTime())
+                : source && typeof source === 'object'
+                    ? Object.getOwnPropertyNames(source).reduce((o, prop) => {
+                        Object.defineProperty(o, prop, Object.getOwnPropertyDescriptor(source, prop));
+                        o[prop] = this.deepCopy(source[prop]);
+                        return o;
+                    }, Object.create(Object.getPrototypeOf(source)))
+                    : source;
     }
     resetState() {
         this.gameEnded = false;
@@ -227,6 +264,7 @@ class State {
             hearts: new Array(),
             diamonds: new Array()
         };
+        this.alerts = [];
     }
     forceUpdateUI() {
         if (this.forceUpdateUICount < 1) {
@@ -242,6 +280,15 @@ class State {
                 }
                 state.forceUpdateUI();
             });
+        }
+        alerts.innerHTML = "";
+        for (const alert of this.alerts) {
+            alerts.innerHTML += alert.html;
+            if (alert.fadeOut) {
+                document.getElementById(alert.buttonId).addEventListener("click", () => {
+                    fadeOut(alert.id);
+                });
+            }
         }
         gameStockClothRevealedCards.replaceChildren();
         this.stockRevealedCards.forEach((card, index) => {
@@ -303,22 +350,17 @@ class State {
         }
         const cards = document.getElementsByClassName("card");
         const piles = document.getElementsByClassName("game__working-cloth__face-up-pile");
+        const dragStartActions = (event) => {
+            event.dataTransfer.setData("id", event.target.id);
+            event.dataTransfer.setData("element", event.target.toString());
+        };
         for (let i = 0; i < cards.length; i++) {
             const card = cards.item(i);
-            card.addEventListener("dragstart", (event) => {
-                event.dataTransfer.setData("id", event.target.id);
-                console.log("Setting dragEvent id property to (event.target as Element).id: " + event.target.id);
-                console.log("(event.target as Element):\n", event.target);
-            });
+            card.addEventListener("dragstart", dragStartActions);
         }
         for (let i = 0; i < piles.length; i++) {
             const pile = piles.item(i);
-            pile.addEventListener("dragstart", (event) => {
-                event.dataTransfer.setData("id", event.target.id);
-                event.dataTransfer.setData("element", event.target.toString());
-                console.log("Setting dragEvent id property to (event.target as Element).id: " + event.target.id);
-                console.log("(event.target as Element):\n", event.target);
-            });
+            pile.addEventListener("dragstart", dragStartActions);
         }
         const dropTargets = document.getElementsByClassName("drop-target");
         for (let i = 0; i < dropTargets.length; i++) {
@@ -334,14 +376,9 @@ class State {
                 let dragElement = document.getElementById(id);
                 let dragItem;
                 if (dragElement === null) {
-                    console.log("dragElement is null!");
-                    console.log("dropTarget is", dropTarget);
-                    console.log("id is", id);
-                    console.log("dataTransfer.getData.('element') is", event.dataTransfer.getData("element"));
-                    console.trace();
+                    throw new Error(`dragElement was null: dataTransfer.getData.('element') is ${event.dataTransfer.getData("element")}`);
                 }
                 if (dragElement.classList.contains("game__working-cloth__face-up-pile")) {
-                    console.log("dragged element is pile");
                     let cards = [];
                     for (let i = 0; i < dragElement.children.length; i++) {
                         cards.push(cardWithId(dragElement.children[i].id));
@@ -362,41 +399,46 @@ class State {
                 }
             });
         }
-        const setElementsState = (state) => {
+        const setElementStates = (state) => {
             const cards = document.getElementsByClassName("card");
             const decks = document.getElementsByClassName("deck");
+            const setPointerEvents = (iterator, value) => {
+                cards.item(iterator).style.pointerEvents = value;
+            };
             if (state === true) {
                 for (let i = 0; i < cards.length; i++) {
-                    cards.item(i).style.pointerEvents = "none";
+                    setPointerEvents(i, "none");
                 }
                 for (let i = 0; i < decks.length; i++) {
-                    decks.item(i).style.pointerEvents = "none";
+                    setPointerEvents(i, "none");
                 }
             }
             else {
                 for (let i = 0; i < cards.length; i++) {
-                    cards.item(i).style.pointerEvents = "auto";
+                    setPointerEvents(i, "auto");
                 }
                 for (let i = 0; i < decks.length; i++) {
-                    decks.item(i).style.pointerEvents = "auto";
+                    setPointerEvents(i, "auto");
                 }
             }
         };
         if (this.gameEnded) {
-            setElementsState(true);
-            const alert = new Alert("Congratulations! You won the game.");
-            alert.present();
+            setElementStates(true);
+            const alertText = "Congratulations! You won the game.";
+            if (!(this.alerts.filter(element => element.text === alertText).length > 0)) {
+                this.alerts.push(new Alert(alertText));
+            }
         }
         else {
-            setElementsState(false);
+            setElementStates(false);
         }
         if (this.history.length === 0) {
-            gameControlsUndo.setAttribute("disabled", "false");
-            gameControlsUndo.classList.add("button-01--disabled");
+            gameControlsUndo.disabled = true;
+            gameControlsUndo.classList.add("disabled");
         }
         else {
-            gameControlsUndo.setAttribute("disabled", "true");
-            gameControlsUndo.classList.remove("button-01--disabled");
+            gameControlsUndo.disabled = false;
+            gameControlsUndo.classList.remove("disabled");
         }
         this.forceUpdateUICount++;
     }
@@ -409,37 +451,6 @@ function fadeOut(id) {
         document.getElementById(id).remove();
     };
     window.setTimeout(removeElement, 1000);
-}
-class Alert {
-    constructor(text, id, buttonId) {
-        this.fadeOut = true;
-        if (id) {
-            this.id = id;
-        }
-        else {
-            this.id = uuid.v4();
-        }
-        if (buttonId) {
-            this.buttonId = buttonId;
-        }
-        else {
-            this.buttonId = uuid.v4();
-        }
-    }
-    get html() {
-        return `<div class="alert" id="${this.id}">
-      <span>${this.text}</span>
-      <button id="${this.buttonId}"><strong>X</strong></button>
-    </div>`;
-    }
-    present() {
-        deckSurface.innerHTML = `${this.html}${deckSurface.innerHTML}`;
-        if (fadeOut) {
-            document.getElementById(this.buttonId).addEventListener("click", () => {
-                fadeOut(this.id);
-            });
-        }
-    }
 }
 function styleAllPiles() {
     const piles = document.getElementsByClassName("pile");
@@ -478,24 +489,15 @@ function clearFoundationDecksContent() {
     }
     return successful;
 }
-let newGameConfirmationCounter = 0;
 gameControlsNewGame.addEventListener("click", () => {
-    if (newGameConfirmationCounter === 0) {
-        gameControlsNewGame.children.item(0).innerHTML = "Confirm";
-    }
-    else {
-        state.history = [];
-        state.resetState();
-        state.forceUpdateUI();
-    }
-    newGameConfirmationCounter++;
+    state.history = [];
+    state.resetState();
+    state.forceUpdateUI();
 });
-function undoMove() {
+gameControlsUndo.addEventListener("click", () => {
     state.loadState(state.history[state.history.length - 1].state);
     state.forceUpdateUI();
-    console.log(state);
-}
-gameControlsUndo.addEventListener("click", undoMove);
+});
 function checkGameStatus() {
     let tally = 0;
     for (const key in state.foundationDecks) {
