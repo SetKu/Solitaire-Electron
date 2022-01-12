@@ -493,8 +493,10 @@ class State {
         const card = cards[i];
         let cardCopy = card.clone();
 
-        //This logic checks if a the loop is set to create a drag pile or not. If it is, it executes code to do so.
+        //This logic checks if the for loop is set to create a drag pile or not based on its makeDragPile boolean variable. If it is set to true, it executes the code to make the pile. Otherwise, it checks if the current card is set to be forced face-up and is not the last card. If so, the card is added into a new pile div container which is assigned an Id. The card is set not to be draggable (but the pile is so it can be dragged) and makeDragPile is set to true so the rest of the cards created will be placed in the pile container.
+        //The final two else-if/else statements run when the iterator is set not to make a new pile and simply add a face-down card to the working pile until it reaches the last card, in which case it adds the card face-up.
         if (makeDragPile === true) {
+          //This if statement checks whether the card currently being iterated on is the last in the series. If it is, the card is added normally. Otherwise, the card is added and its draggable property is set to false so it cannot be dragged (as per the rules of Solitaire).
           if (card === cards[cards.length - 1]) {
             document.getElementById(pileId).innerHTML += card.html;
           } else {
@@ -507,6 +509,7 @@ class State {
 
           cardCopy.draggable = false;
 
+          //This is the pile HTML. The pile is a div container which holds add the card that follow after its creation. The pile is draggable so that the entire pile can be dragged from one working pile to another.
           pile.innerHTML += `<div class="game__working-cloth__face-up-pile" id="${pileId}" draggable="true">
             ${cardCopy.html}
           </div>`;
@@ -518,10 +521,13 @@ class State {
       }
     }
 
+    //This pile styling call is made to style all the newly added piles above.
     styleAllPiles();
 
+    //The foundation decks are cleared in this call in preparation for the addition of cards to the decks.
     clearFoundationDecksContent();
 
+    //For each foundation deck a SuitPlaceholder is added corresponding to that pile. However, if the pile holds cards the top card is found and presented for the pile.
     for (const key in this.foundationDecks) {
       if (this.foundationDecks[key].length != 0) {
         let topCard = this.foundationDecks[key][this.foundationDecks[key].length - 1];
@@ -531,9 +537,13 @@ class State {
       }
     }
 
+    /* Drag and Drop Code */
+
+    //These two constants are set to contain all the cards and piles, in the UI, respectively,
     const cards = document.getElementsByClassName("card");
     const piles = document.getElementsByClassName("game__working-cloth__face-up-pile");
 
+    //These dragStartActions take the elemental target they are called on and stores its id and basic html structure in the event provided's dataTransfer property to be stored over the course of a drag.
     const dragStartActions = (event: DragEvent) => {
       event.dataTransfer.setData("id", (event.target as Element).id);
       event.dataTransfer.setData("element", (event.target as Element).toString());
