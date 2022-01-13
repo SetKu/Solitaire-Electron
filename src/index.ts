@@ -440,22 +440,30 @@ class State {
   //The forceUpdateUI method is the heavy hitter of the State object. It is responsible for rendering the current state's configuration in the UI. If a card is removed from one pile and added to another and the method is called, the method will update the UI to reflect that change.
   forceUpdateUI() {
     //This anonymous function updates the UI to show alerts above the game on in the user interface. It is capable of showing multiple alerts at once.
-    const updateForAlerts = () => {
+    const updateUIForAlerts = () => {
       alerts.innerHTML = "";
 
       //For each alert, the alerts html representation will be added to the alerts container element's content to display it on screen.
       for (const alert of this.alerts) {
         alerts.innerHTML += alert.html;
 
-        //If the alert that was just added was set to fadeOut when dismissed instead of just disappearing, an event listener is added to the alert's dismiss button which will cause it to fade out when dismissed.
-        if (alert.fadeOut) {
-          document.getElementById(alert.buttonId).addEventListener("click", () => {
-            //The fadeOut method is declared elsewhere.
-            fadeOut(alert.id);
-          });
-        }
+        //If the alert that was just added was set to fadeOut when dismissed instead of just disappearing, an event listener is added to the alert's dismiss button which will cause it to fade out when dismissed. Otherwise, when the alert is dismissed it will disappear instantly. The alert is removed from the state when dismissed, regardless.
+        document.getElementById(alert.buttonId).addEventListener("click", () => {
+          if (alert.fadeOut) {
+            //The fadeOut method is declared elsewhere and a callback function is provided to it which removes the alert after it finishes.
+            fadeOut(alert.id, () => {
+              this.alerts.splice(this.alerts.indexOf(alert), 1);
+            });
+          } else {
+            //The alert is instantly removed from the state.
+            this.alerts.splice(this.alerts.indexOf(alert), 1);
+          }
+        });
       }
     }
+
+    //The game's alerts are presented onto the screen to reflect the current state of the UI. Alerts can be added later in the function, however, they will have to be presented by calling the function again.
+    updateUIForAlerts();
 
     //The ParentNode.replaceChildren() is used further in this project's code. It is an alternative and convenient way of emptying a html elements innerHTML content.
     gameStockClothRevealedCards.replaceChildren();
@@ -479,14 +487,14 @@ class State {
       //The cards variable is set to the cards corresponding to the current iteration's pile.
       const cards = this.workingPiles[i];
 
+      //The pile variable is set to the element corresponding to the current iteration.
+      const pile = gameWorkingClothPiles.children[i];
+      pile.replaceChildren();
+
       //If there are no cards in the pile, this function has no reason to continue executing its logic, and thus continues on to its next iteration.
       if (cards.length === 0) {
         continue;
       }
-
-      //The pile variable is set to the element corresponding to the current iteration.
-      const pile = gameWorkingClothPiles.children[i];
-      pile.replaceChildren();
 
       //This loop cycles through each card in the current working pile. It will create a pile if the card is forced face up, and just a regular face-down card otherwise. The final card is always presented face-up.
       for (let i = 0, makeDragPile = false, pileId = ""; i < cards.length; i++) {
@@ -524,8 +532,10 @@ class State {
     //This pile styling call is made to style all the newly added piles above.
     styleAllPiles();
 
-    //The foundation decks are cleared in this call in preparation for the addition of cards to the decks.
-    clearFoundationDecksContent();
+    //The foundation decks are cleared in this for loop in preparation for the addition of cards to the decks. It works by iterating over foundation deck and removing its children.
+    for (let i = 0; i < gameFoundationCloth.children.length; i++) {
+      gameFoundationCloth.children[i].replaceChildren();
+    }
 
     //For each foundation deck a SuitPlaceholder is added corresponding to that pile. However, if the pile holds cards the top card is found and presented for the pile.
     for (const key in this.foundationDecks) {
@@ -549,104 +559,122 @@ class State {
       event.dataTransfer.setData("element", (event.target as Element).toString());
     }
 
+    //For each card the dragStartActions are attached using an event listener for when the user starts dragging a card.
     for (let i = 0; i < cards.length; i++) {
       const card = cards.item(i);
 
       card.addEventListener("dragstart", dragStartActions);
     }
 
+    //For each pile the dragStartActions are attached using an event listener for when the user starts dragging a pile.
     for (let i = 0; i < piles.length; i++) {
       const pile = piles.item(i);
 
       pile.addEventListener("dragstart", dragStartActions);
     }
 
+    //The dropTargets constant stores all elements that are designated to be drop targets.
     const dropTargets = document.getElementsByClassName("drop-target");
 
+    //This loop iterates over every dropTarget element and attaches event listeners to it to allow the user to attempt to drop an item on it.
     for (let i = 0; i < dropTargets.length; i++) {
-      const dropTarget = dropTargets.item(i);
+      const dropTarget = dropTargets.item(i); //This line gets the current item
 
+      //This dragover event listener prevents the event's default behaviour which is to use the cursor to indicate that the user cannot drop over the location they are hovering over. Although the user may not be able to drop the card in the spot they are attempting to logically, this event listener allows them to try.
       dropTarget.addEventListener("dragover", (event: DragEvent) => {
         event.preventDefault();
       });
-    }
 
-    for (let i = 0; i < dropTargets.length; i++) {
-      const dropTarget = dropTargets.item(i);
-
+      //This event listener adds a response for when the user drops an element on a dropTarget. The callback function will attempt to decipher whether the user is dragging a pile or card. If they are dragging neither, an error will be thrown (which can happen, for instance if a user tries to drag an image onto a dropTarget, but is not an issue). After figuring out what is being dragged, the callback function will check whether the move is valid, and if so move the card and update the UI.
       dropTarget.addEventListener("drop", (event: DragEvent) => {
         const id = event.dataTransfer.getData("id");
         let dragElement = document.getElementById(id);
-        let dragItem: Card | Pile;
+        let dragItem: Card | Pile; //dragItem is either of type Card or conforms to interface Pile. The purpose of the variable is to store the drag items' data model representation and validate the move attempting to be made.
 
+        //This runs if the element being dragged didn't have an Id or couldn't be found in the DOM. If so, an error is thrown to log the issue. This may happen if the user attempts to drag an image onto the dropTarget. However, this is expected behaviour. The console.log and error statements are there to report the incident to client-side developers.
         if (dragElement === null) {
-          throw new Error(`dragElement was null: dataTransfer.getData.('element') is ${event.dataTransfer.getData("element")}`);
+          console.log(dragElement);
+          throw new Error(`dragElement was null.`);
         }
 
+        //This if statement checks if the element being dragged is a working pile pile using its classlist.
         if (dragElement.classList.contains("game__working-cloth__face-up-pile")) {
           let cards: Array<Card> = [];
 
+          //For each child card of the dragElement, the card's representation in the state is copied pushed to the cards array.
           for (let i = 0; i < dragElement.children.length; i++) {
             cards.push(cardWithId(dragElement.children[i].id));
           }
 
+          //dragItem is set to an object which conforms to the Pile interface.
           dragItem = {
             id: id,
             cards: cards
           }
         } else {
+          //This else block runs if the element has been identified as a card. If so, it's representation in the data model is assigned to dragItem.
           dragItem = cardWithId(id);
         }
 
+        //This if statement checks if the move being made is valid by passing in the dragItem and the destination using another function. If the move is valid, the card will be moved in the state and the UI will be updated to reflect the change.
         if (checkMoveValidity(dragItem, gamePositionForElement(dropTarget as HTMLElement))) {
-          event.preventDefault();
+          event.preventDefault(); //Preventing the default here prevents the card from flying back to its origin for the user.
+
+          //moveItem moves the item from its current position to its destination.
           moveItem(dragItem, gamePositionForElement(dropTarget as HTMLElement));
+
+          //The click sound effect is played to indicate success to the user.
           clickSoundEffect.play();
+
+          //The UI is updated to reflect the changes.
           this.forceUpdateUI();
         }
       });
     }
 
-    const setElementStates = (state: boolean) => {
+    //This anonymous function serves to change the UI's state to be interactive or static based on its input.
+    const setElementStates = (toStatic: boolean) => {
       const cards = document.getElementsByClassName("card");
       const decks = document.getElementsByClassName("deck");
 
-      const setPointerEvents = (iterator: number, value: string) => {
-        (cards.item(iterator) as HTMLElement).style.pointerEvents = value;
+      //The pointer events css property determines whether a user can actually move a card or not with their cursor. This anonymous function serves to automate changing the pointer events value based on its input parameter.
+      const setPointerEvents = (value: string) => {
+        for (let i = 0; i < cards.length; i++) {
+          (cards.item(i) as HTMLElement).style.pointerEvents = value;
+        }
+
+        for (let i = 0; i < decks.length; i++) {
+          (decks.item(i) as HTMLElement).style.pointerEvents = value;
+        }
       }
 
-      if (state === true) {
-        for (let i = 0; i < cards.length; i++) {
-          setPointerEvents(i, "none");
-        }
-
-        for (let i = 0; i < decks.length; i++) {
-          setPointerEvents(i, "none");
-        }
+      //If the toStatic parameter is true, the game's elements should be set to be static. Otherwise, it is set to be interactive with the "auto" pointer events value.
+      if (toStatic === true) {
+        setPointerEvents("none");
       } else {
-        for (let i = 0; i < cards.length; i++) {
-          setPointerEvents(i, "auto");
-        }
-
-        for (let i = 0; i < decks.length; i++) {
-          setPointerEvents(i, "auto");
-        }
+        setPointerEvents("auto");
       }
     }
 
+    //This conditional statement checks whether the game has ended. If it has, all the game's elements are set to be static. Otherwise, the game will be made interactive.
     if (this.gameEnded) {
       setElementStates(true);
 
+      //A message for the upcoming alert.
       const alertText = "Congratulations! You won the game."
 
+      //This conditional statement checks whether an alert exists in the state's alerts property that already matches the message of the alertText. If an alert doesn't it adds the alert to the alerts section.
       if (this.alerts.filter(element => { return element.text === alertText }).length === 0) {
+        //A new alert is created and added to the alerts property.
         this.alerts.push(new Alert(alertText));
-        updateForAlerts();
+        //The UI is updated to reflect the change.
+        updateUIForAlerts();
       }
     } else {
       setElementStates(false);
     }
 
+    //If no StateLogs have been recorded in the history proper,ty the undo button will be disabled as there is no move to undo. Otherwise, the undo button will be enabled.
     if (this.history.length === 0) {
       (gameControlsUndo as HTMLInputElement).disabled = true;
       (gameControlsUndo as HTMLElement).classList.add("disabled");
@@ -657,44 +685,50 @@ class State {
   }
 }
 
+//This is the declaration point of the state which is used all over in this project.
 let state = new State();
-state.forceUpdateUI();
+state.forceUpdateUI(); //The UI is immediately updated to reflect the state.
 
 /*** Functional Runtime Code ***/
 
-function fadeOut(id: string) {
+//The fadeOut function finds the element provided to it's identifier and gives it the the styling to slowly fade out over the period of one second. After that period has elapsed, the element is removed from the DOM. Additionally, a callback function is executed if one is provided.
+function fadeOut(id: string, callback: () => void) {
   document.getElementById(id).style.animationName = 'fadeOut';
 
-  const removeElement = () => {
+  //The rest of this functions actions are in an embedded callback function because otherwise they would run immediately instead of at the correct time.
+  setTimeout(() => {
     document.getElementById(id).remove()
-  }
 
-  window.setTimeout(removeElement, 1000);
+    //The callback function is called if one was provided.
+    if (callback) {
+      callback();
+    }
+  }, 1000);
 }
 
+//This function styles all piles in the DOM by offsetting cards on top of each other as they normally would when physically playing Solitaire. The function is called after every state change as the pile styling will need to be redone.
 function styleAllPiles() {
+  //Both working piles and embedded face-up piles receive the styling in this function.
   const piles = document.getElementsByClassName("pile");
   const forceFaceUpPiles = document.getElementsByClassName("game__working-cloth__face-up-pile");
 
-  const offsetStart = 4.5;
+  const offsetStart = 4.5; //This is a tweaked value which sets how offset the cards are.
 
+  //For each pile identified, each of the pile's child cards have a transform applied which is proportional to their position in the pile. The greater their position, the more offset that is applied.
   for (let i = 0; i < piles.length; i++) {
     let pile = piles.item(i);
 
     for (let i = 0; i < pile.children.length; i++) {
-      if (i !== 0 && pile.children[i - 1].classList.contains("game__working-cloth__face-up")) {
-        const offset = offsetStart * i + (pile.children[i - 1].children.length * 6.9) + 10;
-        pile.children[i].setAttribute("style", `transform: translateY(-${offset}rem);`);
-      } else {
-        pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
-      }
+      pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
     }
 
+    //If the pile currently being iterated on has more than 9 cards, it will be shown with a scroll bar as the cards will end up flowing off the working cloth and be hidden.
     if (state.workingPiles[i].length > 9) {
       (pile as HTMLElement).style.overflowY = "scroll";
     }
   }
 
+  //For each force up pile, the same treatment is applied as the regular working piles. Each child card is applied a proportional offset to its position in the pile.
   for (let i = 0; i < forceFaceUpPiles.length; i++) {
     let pile = forceFaceUpPiles.item(i);
 
@@ -704,26 +738,15 @@ function styleAllPiles() {
   }
 }
 
-function clearFoundationDecksContent(): boolean {
-  let successful = true;
-
-  for (let i = 0; i < gameFoundationCloth.children.length; i++) {
-    gameFoundationCloth.children[i].replaceChildren();
-    if (gameFoundationCloth.children[i].children.length != 0) {
-      successful = false;
-    };
-  }
-
-  return successful;
-}
-
-//Deck click logic
+//An event listener is added here to the stockDeck's HTML element. The event listener sets it such that every time the deck is clicked the deck will dispense a new card to the stockRevealedCards.
 gameStockClothDeck.addEventListener("click", (event) => {
+  //Since revealing a card is a move, the state is logged in preparation for the change, allowing the move to be undone.
   state.history.push(new StateLog(state));
 
   const sRC = state.stockRevealedCards;
   const sDC = state.stockDeck.cards;
 
+  //This conditional checks whether three cards exist in the stockRevealedCards. If there are less than three, a new card is added normally from the stockDeck. Otherwise, the oldest card is put back into the stockDeck and a new card is added from it as well.
   if (sRC.length < 3) {
     sRC.unshift(sDC.pop());
   } else {
@@ -731,10 +754,11 @@ gameStockClothDeck.addEventListener("click", (event) => {
     sRC.unshift(sDC.pop());
   }
 
+  //The state is updated to reflect the change made.
   state.forceUpdateUI();
 });
 
-//New game button functionality
+//This event listener makes the new game button functional.
 gameControlsNewGame.addEventListener("click", () => {
   state.history = [];
 
@@ -1084,3 +1108,6 @@ function checkMoveValidity(item: Card | Pile, destination: GamePositions): boole
 
   return false;
 }
+
+state.gameEnded = true;
+state.forceUpdateUI();

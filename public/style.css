@@ -50,7 +50,7 @@ body {
   border-radius: var(--border-radius);
 }
 
-.game, .alert {
+.game, .game__controls, .alert {
   box-shadow: 3pt 3pt 10pt rgba(0, 0, 0, 0.5);
 }
 
@@ -144,10 +144,6 @@ body {
   height: calc(3.5rem * var(--card-size-common));
 }
 
-.card--invisible {
-  pointer-events: none;
-}
-
 .card, .card--face-down, .card--suit-placeholder, .deck {
   box-shadow: 0.1rem 0.1rem 0 rgba(0, 0, 0, 0.2);
 }
@@ -160,6 +156,15 @@ body {
 
 .deck {
   border: 0.32rem solid rgba(255, 255, 255, 0.1);
+  transition: filter 0.15s;
+}
+
+.deck:active {
+  filter: brightness(0.6);
+}
+
+.card * {
+  user-select: none;
 }
 
 .card__top-left, .card__bottom-right {
@@ -179,10 +184,6 @@ body {
   transform: rotate(180deg);
   bottom: -0.5rem;
   right: -2.65rem;
-}
-
-.card__corner-value, .card__corner-suit {
-  user-select: none;
 }
 
 .card__corner-suit {
@@ -212,6 +213,7 @@ body {
   position: relative;
   left: 50%;
   transform: translateX(-50%);
+  margin: 1.5rem;
   display: flex;
   justify-content: space-evenly;
   width: 20rem;

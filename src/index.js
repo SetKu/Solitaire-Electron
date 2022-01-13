@@ -273,17 +273,23 @@ class State {
         this.alerts = [];
     }
     forceUpdateUI() {
-        const updateForAlerts = () => {
+        const updateUIForAlerts = () => {
             alerts.innerHTML = "";
             for (const alert of this.alerts) {
                 alerts.innerHTML += alert.html;
-                if (alert.fadeOut) {
-                    document.getElementById(alert.buttonId).addEventListener("click", () => {
-                        fadeOut(alert.id);
-                    });
-                }
+                document.getElementById(alert.buttonId).addEventListener("click", () => {
+                    if (alert.fadeOut) {
+                        fadeOut(alert.id, () => {
+                            this.alerts.splice(this.alerts.indexOf(alert), 1);
+                        });
+                    }
+                    else {
+                        this.alerts.splice(this.alerts.indexOf(alert), 1);
+                    }
+                });
             }
         };
+        updateUIForAlerts();
         gameStockClothRevealedCards.replaceChildren();
         this.stockRevealedCards.forEach((card, index) => {
             if (index === 0) {
@@ -298,11 +304,11 @@ class State {
         });
         for (let i = 0; i < 7; i++) {
             const cards = this.workingPiles[i];
+            const pile = gameWorkingClothPiles.children[i];
+            pile.replaceChildren();
             if (cards.length === 0) {
                 continue;
             }
-            const pile = gameWorkingClothPiles.children[i];
-            pile.replaceChildren();
             for (let i = 0, makeDragPile = false, pileId = ""; i < cards.length; i++) {
                 const card = cards[i];
                 let cardCopy = card.clone();
@@ -332,7 +338,9 @@ class State {
             }
         }
         styleAllPiles();
-        clearFoundationDecksContent();
+        for (let i = 0; i < gameFoundationCloth.children.length; i++) {
+            gameFoundationCloth.children[i].replaceChildren();
+        }
         for (const key in this.foundationDecks) {
             if (this.foundationDecks[key].length != 0) {
                 let topCard = this.foundationDecks[key][this.foundationDecks[key].length - 1];
@@ -362,15 +370,13 @@ class State {
             dropTarget.addEventListener("dragover", (event) => {
                 event.preventDefault();
             });
-        }
-        for (let i = 0; i < dropTargets.length; i++) {
-            const dropTarget = dropTargets.item(i);
             dropTarget.addEventListener("drop", (event) => {
                 const id = event.dataTransfer.getData("id");
                 let dragElement = document.getElementById(id);
                 let dragItem;
                 if (dragElement === null) {
-                    throw new Error(`dragElement was null: dataTransfer.getData.('element') is ${event.dataTransfer.getData("element")}`);
+                    console.log(dragElement);
+                    throw new Error(`dragElement was null.`);
                 }
                 if (dragElement.classList.contains("game__working-cloth__face-up-pile")) {
                     let cards = [];
@@ -393,27 +399,22 @@ class State {
                 }
             });
         }
-        const setElementStates = (state) => {
+        const setElementStates = (toStatic) => {
             const cards = document.getElementsByClassName("card");
             const decks = document.getElementsByClassName("deck");
-            const setPointerEvents = (iterator, value) => {
-                cards.item(iterator).style.pointerEvents = value;
-            };
-            if (state === true) {
+            const setPointerEvents = (value) => {
                 for (let i = 0; i < cards.length; i++) {
-                    setPointerEvents(i, "none");
+                    cards.item(i).style.pointerEvents = value;
                 }
                 for (let i = 0; i < decks.length; i++) {
-                    setPointerEvents(i, "none");
+                    decks.item(i).style.pointerEvents = value;
                 }
+            };
+            if (toStatic === true) {
+                setPointerEvents("none");
             }
             else {
-                for (let i = 0; i < cards.length; i++) {
-                    setPointerEvents(i, "auto");
-                }
-                for (let i = 0; i < decks.length; i++) {
-                    setPointerEvents(i, "auto");
-                }
+                setPointerEvents("auto");
             }
         };
         if (this.gameEnded) {
@@ -421,7 +422,7 @@ class State {
             const alertText = "Congratulations! You won the game.";
             if (this.alerts.filter(element => { return element.text === alertText; }).length === 0) {
                 this.alerts.push(new Alert(alertText));
-                updateForAlerts();
+                updateUIForAlerts();
             }
         }
         else {
@@ -439,12 +440,14 @@ class State {
 }
 let state = new State();
 state.forceUpdateUI();
-function fadeOut(id) {
+function fadeOut(id, callback) {
     document.getElementById(id).style.animationName = 'fadeOut';
-    const removeElement = () => {
+    setTimeout(() => {
         document.getElementById(id).remove();
-    };
-    window.setTimeout(removeElement, 1000);
+        if (callback) {
+            callback();
+        }
+    }, 1000);
 }
 function styleAllPiles() {
     const piles = document.getElementsByClassName("pile");
@@ -453,13 +456,7 @@ function styleAllPiles() {
     for (let i = 0; i < piles.length; i++) {
         let pile = piles.item(i);
         for (let i = 0; i < pile.children.length; i++) {
-            if (i !== 0 && pile.children[i - 1].classList.contains("game__working-cloth__face-up")) {
-                const offset = offsetStart * i + (pile.children[i - 1].children.length * 6.9) + 10;
-                pile.children[i].setAttribute("style", `transform: translateY(-${offset}rem);`);
-            }
-            else {
-                pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
-            }
+            pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
         }
         if (state.workingPiles[i].length > 9) {
             pile.style.overflowY = "scroll";
@@ -471,17 +468,6 @@ function styleAllPiles() {
             pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
         }
     }
-}
-function clearFoundationDecksContent() {
-    let successful = true;
-    for (let i = 0; i < gameFoundationCloth.children.length; i++) {
-        gameFoundationCloth.children[i].replaceChildren();
-        if (gameFoundationCloth.children[i].children.length != 0) {
-            successful = false;
-        }
-        ;
-    }
-    return successful;
 }
 gameStockClothDeck.addEventListener("click", (event) => {
     state.history.push(new StateLog(state));
@@ -811,3 +797,5 @@ function checkMoveValidity(item, destination) {
     }
     return false;
 }
+state.gameEnded = true;
+state.forceUpdateUI();
