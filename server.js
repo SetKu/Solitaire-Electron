@@ -8,6 +8,6 @@ app.get("/", (request, response) => {
   response.redirect("/public");
 });
 
-app.listen(3000, () => {
+app.listen(80, () => {
   console.log("App running on http://localhost:3000.");
 });
