@@ -1,0 +1,3 @@
+To start this project, run `node server.js` in the terminal shell. You can also run `npm run start` as an alternative. This will start up the Repl server using [ExpressJS](https://expressjs.com/) and let it begin accepting and responding to web traffic with the projects web files.
+
+This projects scripting was wrote in [TypeScript](https://www.typescriptlang.org/), a compatibility layer for JavaScript, compiled to ES6 JavaScript, then minified and had its dependencies handled by [Webpack](https://webpack.js.org/).
