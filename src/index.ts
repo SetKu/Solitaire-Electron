@@ -1,7 +1,5 @@
 //This file is the index.ts file. It is written in TypeScript and compiled into regular ES6 JavaScript as index.js. This index.js file is then compressed and has its dependencies handled using webpack to creates the ../dist/main.js file which is minified and what the browser actually uses when rendering the index.html file.
 
-import * as e from "express";
-
 //This code imports the uuid node package manager module 'uuid' which can generate random unique identifier strings.
 let uuid = require('uuid');
 
