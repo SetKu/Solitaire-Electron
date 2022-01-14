@@ -1,5 +1,7 @@
 //This file is the index.ts file. It is written in TypeScript and compiled into regular ES6 JavaScript as index.js. This index.js file is then compressed and has its dependecies handled using webpack to creates the ../dist/main.js file which is minified and what the browser actually uses when rendering the index.html file.
 
+import * as e from "express";
+
 //This code imports the uuid node package manager module 'uuid' which can generate random unqiue identifier strings.
 let uuid = require('uuid');
 
@@ -117,11 +119,11 @@ class Card {
 
     return `<div class="card ${this.color}${this.dropTarget ? ' drop-target' : ''}" id="${this.id}" draggable="${this.draggable}">
       <div class="card__top-left">
-        <div class="card__corner-value">${this.value}</div>
+        <div class="card__corner-value" draggable="false">${this.value}</div>
         <img src="./media/${this.suit}.svg" class="card__corner-suit" draggable="false">
       </div>
       <div class="card__bottom-right">
-        <div class="card__corner-value">${this.value}</div>
+        <div class="card__corner-value" draggable="false">${this.value}</div>
         <img src="./media/${this.suit}.svg" class="card__corner-suit" draggable="false">
       </div>
     </div>`;
@@ -501,19 +503,16 @@ class State {
         const card = cards[i];
         let cardCopy = card.clone();
 
-        //This logic checks if the for loop is set to create a drag pile or not based on its makeDragPile boolean variable. If it is set to true, it executes the code to make the pile. Otherwise, it checks if the current card is set to be forced face-up and is not the last card. If so, the card is added into a new pile div container which is assigned an Id. The card is set not to be draggable (but the pile is so it can be dragged) and makeDragPile is set to true so the rest of the cards created will be placed in the pile container.
-        //The final two else-if/else statements run when the iterator is set not to make a new pile and simply add a face-down card to the working pile until it reaches the last card, in which case it adds the card face-up.
+        //This logic checks if the for loop is set to create a drag pile or not based on its makeDragPile boolean variable. If it is set to true, it executes the code to make the pile. Otherwise, it checks if the current card is set to be forced face-up and is not the last card (and therefore a new embedded pile should be created). If so, the card is added into a new pile div container which is assigned an Id. The card is set not to be draggable (but the pile is so it can be dragged) and makeDragPile is set to true so the rest of the cards created will be placed in the pile container.
+        //The final two else-if/else statements run when the iterator is set not to make a new pile. They simply add a face-down card to the working pile for each card until it reaches the last card, in which case it adds the card face-up.
         if (makeDragPile === true) {
-          //This if statement checks whether the card currently being iterated on is the last in the series. If it is, the card is added normally. Otherwise, the card is added and its draggable property is set to false so it cannot be dragged (as per the rules of Solitaire).
-          if (card === cards[cards.length - 1]) {
-            document.getElementById(pileId).innerHTML += card.html;
-          } else {
-            cardCopy.draggable = false;
-            document.getElementById(pileId).innerHTML += cardCopy.html;
-          }
+          //None of the cards within the pile will be set to be draggable on their own. Instead, the entire pile is dragged by the user to interact with it.
+          cardCopy.draggable = false;
+          document.getElementById(pileId).innerHTML += cardCopy.html; //This line adds the modified card to the new embedded pile being made.
         } else if (card.forceFaceUp === true && i !== cards.length - 1) {
+          //makeDragPile is set to true to create a new pile as the current cards has been identified as being forced face up and isn't the last card, meaning it should be marked the start of a pile.
           makeDragPile = true;
-          pileId = uuid.v4();
+          pileId = uuid.v4(); //A new identifier is assigned to the pile to locate it in the DOM.
 
           cardCopy.draggable = false;
 
@@ -522,9 +521,9 @@ class State {
             ${cardCopy.html}
           </div>`;
         } else if (i === cards.length - 1) {
-          pile.innerHTML += card.html;
+          pile.innerHTML += card.html; //The last card is normally added when an embedded pile is not being created.
         } else {
-          pile.innerHTML += Card.faceDownHTML;
+          pile.innerHTML += Card.faceDownHTML; //A regular face-down card is placed (occuring prior to the last card or start of a pile).
         }
       }
     }
@@ -555,8 +554,9 @@ class State {
 
     //These dragStartActions take the elemental target they are called on and stores its id and basic html structure in the event provided's dataTransfer property to be stored over the course of a drag.
     const dragStartActions = (event: DragEvent) => {
-      event.dataTransfer.setData("id", (event.target as Element).id);
-      event.dataTransfer.setData("element", (event.target as Element).toString());
+      console.log("drag started", event.currentTarget)
+      event.dataTransfer.setData("id", (event.currentTarget as Element).id);
+      event.dataTransfer.setData("element", (event.currentTarget as Element).toString());
     }
 
     //For each card the dragStartActions are attached using an event listener for when the user starts dragging a card.
@@ -591,10 +591,10 @@ class State {
         let dragElement = document.getElementById(id);
         let dragItem: Card | Pile; //dragItem is either of type Card or conforms to interface Pile. The purpose of the variable is to store the drag items' data model representation and validate the move attempting to be made.
 
-        //This runs if the element being dragged didn't have an Id or couldn't be found in the DOM. If so, an error is thrown to log the issue. This may happen if the user attempts to drag an image onto the dropTarget. However, this is expected behaviour. The console.log and error statements are there to report the incident to client-side developers.
+        //This runs if the element being dragged didn't have an Id or couldn't be found in the DOM. If so, an error is logged. This may happen if the user attempts to drag an image or other non-identifiable element onto the dropTarget. However, this is expected behaviour. The console.log and error statements are there to report the incident if it may be a bug.
         if (dragElement === null) {
-          console.log(dragElement);
-          throw new Error(`dragElement was null.`);
+          console.log(`dragElement was null:`, dragElement);
+          return;
         }
 
         //This if statement checks if the element being dragged is a working pile pile using its classlist.
@@ -722,9 +722,11 @@ function styleAllPiles() {
       pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
     }
 
-    //If the pile currently being iterated on has more than 9 cards, it will be shown with a scroll bar as the cards will end up flowing off the working cloth and be hidden.
+    //If the pile currently being iterated on has more than 9 cards, it will be shown with a scroll bar as the cards will end up flowing off the working cloth and be hidden. Otherwise, no bar will be shown.
     if (state.workingPiles[i].length > 9) {
       (pile as HTMLElement).style.overflowY = "scroll";
+    } else {
+      (pile as HTMLElement).style.overflowY = "none";
     }
   }
 
@@ -758,16 +760,18 @@ gameStockClothDeck.addEventListener("click", (event) => {
   state.forceUpdateUI();
 });
 
-//This event listener makes the new game button functional.
+//This event listener makes the new game button functional. When the user hits the button, the game's state is reset and the UI is updated. When the game is reset it resets it to a random configuration, so the previous game setup is highly unlikely to be identical to the next.
 gameControlsNewGame.addEventListener("click", () => {
-  state.history = [];
+  //A new StateLog is pushed to allow the user to undo their creation of a new game and go back to the game's previous state.
+  state.history.push(new StateLog(state));
 
   state.resetState();
   state.forceUpdateUI();
 });
 
-//Undo button functionality
+//This event listener makes the undo button functional.
 gameControlsUndo.addEventListener("click", () => {
+  //This callback loads the last state in the history logs into the current game, removes it from the history logs, checks if the game has ended, and updates the UI.
   state.loadState(state.history[state.history.length - 1].state);
   state.history.splice(state.history.length - 1, 1);
   state.gameEnded = checkGameStatus();
@@ -776,20 +780,26 @@ gameControlsUndo.addEventListener("click", () => {
 
 /** Game Logic **/
 
-//returns true if the game is over, and false otherwise.
+//This function returns the boolean value true if the game is over, and false otherwise.
 function checkGameStatus(): boolean {
+  //The tally variable with tally the number of foundation decks that have been completed.
   let tally = 0;
 
+  //This loop iterates over each foundation deck and checks whether it currently holds 13 cards. If so, the deck has been completed and is added to the tally.
   for (const key in state.foundationDecks) {
     if (state.foundationDecks[key].length === 13) {
       tally++;
     }
   }
 
+  //If every foundation deck is full, the game has ended and true is returned. False is returned, otherwise.
   return tally === 4 ? true : false;
 }
 
+//The function returns the card for a specified identifier from the data model.
 function cardWithId(id: string): Card {
+  //This function works by iterating over every card in the different positions within the state and checks each to see if its id matches that which was provided. If so, that card is returned. Otherwise, the function continues until it eventually finds the card.
+
   for (const card of state.stockDeck.cards) {
     if (card.id === id) return card;
   }
@@ -810,12 +820,16 @@ function cardWithId(id: string): Card {
     }
   }
 
+  //If the card couldn't be found in any of the state positions searched, an error is thrown corresponding to the issue.
   throw new Error("Unable to find card specified by ID: " + id);
 }
 
+//This function returns the GamePosition for the HTML element provided to it.
 function gamePositionForElement(gameElement: HTMLElement): GamePositions {
+  //The elements parentElement is its nearest positioned ancestor.
   const parentElement = gameElement.parentElement;
 
+  //This if/else-if pair checks if the element is a face-up working cloth pile by attempting to match its, or its parent's, class list to the corresponding face-up pile class. If the class list is matched on either, the code will be executed to convert the index data value from either the element or its parent pile to a number, and return that plus one to correspond to the correct working pile in GamePositions. An else exception is also included if the value cannot be converted to a Number which performs the same action verbosely. This exception is needed as in certain circumstances the dataset index cannot be converted into a Number.
   if (parentElement.classList.contains("game__working-cloth__face-up-pile")) {
     if (Number(parentElement.parentElement.dataset.index)) {
       return Number(parentElement.parentElement.dataset.index) + 1;
@@ -835,10 +849,11 @@ function gamePositionForElement(gameElement: HTMLElement): GamePositions {
           return GamePositions.workingPile5;
         case "6":
           return GamePositions.workingPile6;
-        default:
-          throw new Error("Unable to match game element's pile data index value to a working pile position: " + parentElement);
       }
     }
+
+    //If the value can't be matched, an error is thrown.
+    throw new Error("Unable to match game element's pile data index value to a working pile position: " + parentElement);
   } else if (gameElement.classList.contains("game__working-cloth__face-up-pile")) {
     if (Number(gameElement.parentElement.dataset.index)) {
       return Number(gameElement.parentElement.dataset.index) + 1;
@@ -864,10 +879,12 @@ function gamePositionForElement(gameElement: HTMLElement): GamePositions {
     throw new Error("Unable to match the element provided to a pile. " + gameElement);
   }
 
+  //If the class list corresponds to the stock cloth revealed cards, the correct position is returned for that.
   if (gameElement.classList.contains("game__stock-cloth__revealed-cards") || parentElement.classList.contains("game__stock-cloth__revealed-cards")) {
     return GamePositions.stockRevealedCards;
   }
 
+  //If the element is a pile, its position is returned as a working pile position.
   if (parentElement.classList.contains("pile")) {
     if (Number(parentElement.dataset.index)) {
       return Number(parentElement.dataset.index) + 1;
@@ -916,6 +933,7 @@ function gamePositionForElement(gameElement: HTMLElement): GamePositions {
     throw new Error("Unable to match the element provided to a pile. " + gameElement);
   }
 
+  //For each element in the parentElement's classlist, it is searched to test whether it is a foundation cloth. This would occur if the element passed as input is a foundation deck card or card placeholder. If the parent element is a foundation cloth, the correct foundation cloth is returned based on the full class name.
   for (let i = 0; i < parentElement.classList.length; i++) {
     if (parentElement.classList.item(i).includes("foundation-cloth")) {
       switch (parentElement.classList.item(i)) {
@@ -928,11 +946,13 @@ function gamePositionForElement(gameElement: HTMLElement): GamePositions {
         case "game__foundation-cloth__diamonds":
           return GamePositions.foundationDeckDiamonds;
         default:
+          //An appropriate error is thrown if, for some reason, the foundation deck could not be matched.
           throw new Error("Unable to find matching foundation cloth position for game element: " + parentElement);
       }
     }
   }
 
+  //This is a repeat of the loop above but for the gameElement itself.
   for (let i = 0; i < gameElement.classList.length; i++) {
     if (gameElement.classList.item(i).includes("foundation-cloth")) {
       switch (gameElement.classList.item(i)) {
@@ -950,19 +970,40 @@ function gamePositionForElement(gameElement: HTMLElement): GamePositions {
     }
   }
 
-  console.log(gameElement);
   throw new Error("Unable to find position of element specified: " + gameElement);
 }
 
+//The moveItem function moves the item provided to it to the destination specified.
 function moveItem(item: Card | Pile, destination: GamePositions) {
+  //Since a move is about to be made, a StateLog is created and appended to the states' history.
   state.history.push(new StateLog(state));
 
+  //This is a helper function setup and called twice later within this function. The function takes the card provided to it and pushes it to the destination provided (which will need to have been confirmed to be a foundation deck).
+  function foundationPush(card: Card) {
+    switch (destination) {
+      case GamePositions.foundationDeckClubs:
+        state.foundationDecks.clubs.push(card);
+        break;
+      case GamePositions.foundationDeckDiamonds:
+        state.foundationDecks.diamonds.push(card);
+        break;
+      case GamePositions.foundationDeckHearts:
+        state.foundationDecks.hearts.push(card);
+        break;
+      case GamePositions.foundationDeckSpades:
+        state.foundationDecks.spades.push(card);
+    }
+  }
+
+  //This first if block runs if the item provided is a card.
   if (item instanceof Card) {
+    //Semantic labelling for the item variable to typecast it strictly as a card and make it easier to work with in the local block.
     const card = item as Card;
+
     const cardElement = document.getElementById(card.id);
     const origin = gamePositionForElement(cardElement);
 
-    //add card to destination
+    //First, the card is added to its destination. This conditional determines if the card is being added to a working pile or a foundation deck. If its the former, the card is set to not be a dropTarget, the current top card in the working pile is set to be forced face-up (as a new embedded pile will need to be created), and the card is finally pushed to the working pile. Conversely, if the destination is a foundation deck the card is made a dropTarget and pushed to the corresponding foundation deck using the helper function set up earlier.
     if (destination > 0 && destination < 8) {
       card.dropTarget = false;
 
@@ -971,31 +1012,23 @@ function moveItem(item: Card | Pile, destination: GamePositions) {
     } else if (destination > 7 && destination < 12) {
       card.dropTarget = true;
 
-      switch (destination) {
-        case GamePositions.foundationDeckClubs:
-          state.foundationDecks.clubs.push(card);
-          break;
-        case GamePositions.foundationDeckDiamonds:
-          state.foundationDecks.diamonds.push(card);
-          break;
-        case GamePositions.foundationDeckHearts:
-          state.foundationDecks.hearts.push(card);
-          break;
-        case GamePositions.foundationDeckSpades:
-          state.foundationDecks.spades.push(card);
-      }
+      foundationPush(card);
     }
 
-    //remove card from origin
+    //Secondly, the card is removed from its origin. The conditional block here determines where the card originated from and executes actions accordingly.
     if (origin === 0) {
+      //If the card originates from the stockClothRevealedCards, each of the cards within that collection is iterated through.
       for (let i = 0; i < 3; i++) {
+        //If the card currently being iterated on matches the cardElement which is the current DOM representation of the card being moved, the card is removed from the stockClothRevealedCards.
         if (gameStockClothRevealedCards.children.item(i) === cardElement) {
           state.stockRevealedCards.splice(i, 1);
         }
       }
     } else if (origin > 0 && origin < 8) {
+      //The card is simply removed from its working pile by taking its origin GamePosition and subtracting one to get an index.
       state.workingPiles[origin - 1].pop();
     } else if (origin > 7 && origin < 12) {
+      //If the card originated from a foundation deck, a switch is triggered to remove the card from the correct foundation deck based on the origin GamePosition.
       switch (origin) {
         case GamePositions.foundationDeckClubs:
           state.foundationDecks.clubs.pop();
@@ -1011,103 +1044,138 @@ function moveItem(item: Card | Pile, destination: GamePositions) {
       }
     }
   } else {
-    const pile = item;
-    const dest = state.workingPiles[destination - 1];
+    //This block runs if the item passed to move is a pile, not a card.
+
+    const pile = item; //Semantic labelling and typecasting for the item as a pile.
     const origin = gamePositionForElement(document.getElementById(pile.id));
+    const originWorkingPile = state.workingPiles[origin - 1]; //The origin working pile is the working pile the pile originated from. The pile must have an origin working pile as piles can only exist in working piles.
 
-    dest[dest.length - 1].forceFaceUp = true;
+    /*
+     * If the destination is a working pile, the top card of that working pile is set to be force face-up (as the pile may contain only one card, and thus that card needs to be set to create an embedded pile.). Additionally and crucially, each of the cards in the pile provided are added to the working pile and the cards are removed from their origin.
+     * If the destination is a foundation deck, the foundationPush helper function is used to add the top card to be pushed and the card is removed from its origin.
+    */
+    if (destination > 0 && destination < 8) {
+      const destWorkingPile = state.workingPiles[destination - 1];
 
-    for (const card of pile.cards) {
-      dest.push(card);
+      destWorkingPile[destWorkingPile.length - 1].forceFaceUp = true;
+
+      for (const card of pile.cards) {
+        destWorkingPile.push(card);
+      }
+
+      originWorkingPile.splice(originWorkingPile.length - pile.cards.length, pile.cards.length);
+    } else if (destination > 7 && destination < 12) {
+      foundationPush(pile.cards[pile.cards.length - 1]);
+      originWorkingPile.pop();
     }
-
-    const wPile = state.workingPiles[origin - 1];
-    wPile.splice(wPile.length - pile.cards.length, pile.cards.length);
   }
 
+  //The game's status is updated to reflect whether the move ended the game, or not.
   if (checkGameStatus()) {
     state.gameEnded = true;
   }
 }
 
+//This function checks whether a move is valid, taking in an item and destination parameter, and returns a boolean indicating whether the move is valid (true = valid, false = invalid).
 function checkMoveValidity(item: Card | Pile, destination: GamePositions): boolean {
+  //If the destination is the stockDeck, false is returned. In reality, this condition will never be true because the stockDeck isn't a dropTarget. However, is the game is ever expanded or modified, having this condition in here will save some time.
   if (destination === 12) {
     return false;
   }
 
-  if (item instanceof Card) {
-    const card = item as Card;
-
-    const cardElement = document.getElementById(card.id);
-
-    if (gamePositionForElement(cardElement) == destination) {
-      return false;
-    }
-
-    if (destination > 7) {
-      const check = function (foundationSuit: Suits, foundationCloth: Element): boolean {
-        if (card.suit !== foundationSuit) {
-          return false;
-        }
-
-        const topElement = foundationCloth.children.item(0);
-
-        if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
-          return true;
-        } else if (topElement.classList.contains("card--suit-placeholder") && card.value != Values.ace) {
-          return false;
-        } else if (card > cardWithId(topElement.id)) {
-          return true;
-        }
-      }
-
-      switch (destination) {
-        case GamePositions.foundationDeckClubs:
-          return check(Suits.clubs, gameFoundationClothClubs);
-        case GamePositions.foundationDeckDiamonds:
-          return check(Suits.diamonds, gameFoundationClothDiamonds);
-        case GamePositions.foundationDeckHearts:
-          return check(Suits.hearts, gameFoundationClothHearts);
-        case GamePositions.foundationDeckSpades:
-          return check(Suits.spades, gameFoundationClothSpades);
-      }
-    }
-
-    if (destination > 0 && destination < 8) {
-      const pile = state.workingPiles[destination - 1];
-
-      if (pile.length == 0) {
+  //This foundationCheck method is a helper function used further in the body of this code. The function checks whether moving the card provided as a parameter is valid to the foundation deck identified. The destination will need to be confirmed to be a foundation deck for this function to run without potential for problems. The function returns a boolean indicating the moves validity.
+  const foundationCheck = function (card: Card): boolean {
+    //This is an embedded helper function which returns a boolean indicating whether the move being made is valid based on a foundationSuit and foundationDeck provided.
+    const check = function (foundationSuit: Suits, foundationCloth: Element): boolean {
+      //If the card's suit doesn't match that of the foundation deck, it cannot be moved there (and so false is returned).
+      if (card.suit !== foundationSuit) {
         return false;
       }
 
-      const topCard = pile[pile.length - 1];
+      //The topElement is the card currently representing the foundation deck.
+      const topElement = foundationCloth.children.item(0);
 
+      //If the top element is a suit placeholder and the card is an ace, the move is valid. If the top element is a suit placeholder and it isn't an ace, the move is invalid. If the top element is a card with and the card being checked has a value one greater than that card, the move is valid.
+      if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
+        console.log("here")
+        return true;
+      } else if (topElement.classList.contains("card--suit-placeholder") && card.value != Values.ace) {
+        return false;
+      } else if (card.valueOf() === cardWithId(topElement.id).valueOf() as any + 1) {
+        return true;
+      }
+    }
+
+    //For each possible foundation deck destination, a corresponding check is executed and its value propogated up to the collar to be propogated up to the checkMoveValidity() function's caller.
+    switch (destination) {
+      case GamePositions.foundationDeckClubs:
+        return check(Suits.clubs, gameFoundationClothClubs);
+      case GamePositions.foundationDeckDiamonds:
+        return check(Suits.diamonds, gameFoundationClothDiamonds);
+      case GamePositions.foundationDeckHearts:
+        return check(Suits.hearts, gameFoundationClothHearts);
+      case GamePositions.foundationDeckSpades:
+        return check(Suits.spades, gameFoundationClothSpades);
+    }
+  }
+
+  //If the item is a card, this first code block will run. Otherwise, the second.
+  if (item instanceof Card) {
+    const card = item as Card; //Semantic labelling and typecasting.
+    const cardElement = document.getElementById(card.id);
+
+    //If the position for the card Element is the same as where its attempting to be moved, the the move is obviously invalid as the card wouldn't actually be *moving* anywhere. If the destination is a foundation deck, a foundationCheck helper function call is executed to determine whether the move is valid. If the move is to a working pile, additonal checks are run.
+    if (gamePositionForElement(cardElement) === destination) {
+      return false;
+    } else if (destination > 7 && destination < 12) {
+      return foundationCheck(card);
+    } else if (destination > 0 && destination < 8) {
+      //Working pile potentiality.
+
+      const pile = state.workingPiles[destination - 1]; //Destination working pile.
+
+      //If the pile is empty, the user cannot move the card and thus the move is invalid.
+      if (pile.length === 0) {
+        return false;
+      }
+
+      const topCard = pile[pile.length - 1]; //Top card of the destination pile.
+
+      //If the card's color isn't the same as the card it would be placed on top of and it has a value one less than that card, the move is valid.
       if (card.color !== topCard.color && card.valueOf() === topCard.valueOf() as any - 1) {
         return true;
       }
     }
   } else {
-    if (destination > 0 && destination < 8) {
-      const workingPile = state.workingPiles[destination - 1];
+    //This code runs if the item passed to check the move of is a pile.
 
-      if (workingPile.length == 0) {
+    const pile = item;
+
+    //If the destination is a working pile, this block is run.
+    if (destination > 0 && destination < 8) {
+      const destinationWorkingPile = state.workingPiles[destination - 1];
+
+      //If the destination working pile is empty, the move is invalid.
+      if (destinationWorkingPile.length === 0) {
         return false;
       }
 
-      const pile = item;
       const bottomPileCard = pile.cards[0];
-      const topWorkingPileCard = workingPile[workingPile.length - 1];
+      const topWorkingPileCard = destinationWorkingPile[destinationWorkingPile.length - 1];
 
+      //If the bottom pile card is not the same colour as the top destination pile card and has a value one less than it, the move is valid.
       if (bottomPileCard.color !== topWorkingPileCard.color && bottomPileCard.valueOf() === topWorkingPileCard.valueOf() as any - 1) {
         return true;
       }
-    } else {
-      return false;
+    }
+
+    //If the destination is a foundation deck, a foundationCheck is run with the helper function to determine if a move is valid.
+    if (destination > 7 && destination < 12) {
+      //The topPileCard is physically at the bottom of the pile from a top-down perspective.
+      const topPileCard = pile.cards[pile.cards.length - 1];
+      return foundationCheck(topPileCard);
     }
   }
 
   return false;
 }
-
-state.gameEnded = true;
-state.forceUpdateUI();
