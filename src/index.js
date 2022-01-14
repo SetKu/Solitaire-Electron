@@ -454,12 +454,6 @@ function styleAllPiles() {
         for (let i = 0; i < pile.children.length; i++) {
             pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
         }
-        if (state.workingPiles[i].length > 9) {
-            pile.style.overflowY = "scroll";
-        }
-        else {
-            pile.style.overflowY = "none";
-        }
     }
     for (let i = 0; i < forceFaceUpPiles.length; i++) {
         let pile = forceFaceUpPiles.item(i);
@@ -746,11 +740,11 @@ function checkMoveValidity(item, destination) {
                 return false;
             }
             const topElement = foundationCloth.children.item(0);
-            if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
+            if (topElement.classList.contains("card--suit-placeholder") && card.value === Values.ace) {
                 console.log("here");
                 return true;
             }
-            else if (topElement.classList.contains("card--suit-placeholder") && card.value != Values.ace) {
+            else if (topElement.classList.contains("card--suit-placeholder") && card.value !== Values.ace) {
                 return false;
             }
             else if (card.valueOf() === cardWithId(topElement.id).valueOf() + 1) {

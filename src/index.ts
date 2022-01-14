@@ -721,13 +721,6 @@ function styleAllPiles() {
     for (let i = 0; i < pile.children.length; i++) {
       pile.children[i].setAttribute("style", `transform: translateY(-${offsetStart * i}rem);`);
     }
-
-    //If the pile currently being iterated on has more than 9 cards, it will be shown with a scroll bar as the cards will end up flowing off the working cloth and be hidden. Otherwise, no bar will be shown.
-    if (state.workingPiles[i].length > 9) {
-      (pile as HTMLElement).style.overflowY = "scroll";
-    } else {
-      (pile as HTMLElement).style.overflowY = "none";
-    }
   }
 
   //For each force up pile, the same treatment is applied as the regular working piles. Each child card is applied a proportional offset to its position in the pile.
@@ -1096,10 +1089,10 @@ function checkMoveValidity(item: Card | Pile, destination: GamePositions): boole
       const topElement = foundationCloth.children.item(0);
 
       //If the top element is a suit placeholder and the card is an ace, the move is valid. If the top element is a suit placeholder and it isn't an ace, the move is invalid. If the top element is a card with and the card being checked has a value one greater than that card, the move is valid.
-      if (topElement.classList.contains("card--suit-placeholder") && card.value == Values.ace) {
+      if (topElement.classList.contains("card--suit-placeholder") && card.value === Values.ace) {
         console.log("here")
         return true;
-      } else if (topElement.classList.contains("card--suit-placeholder") && card.value != Values.ace) {
+      } else if (topElement.classList.contains("card--suit-placeholder") && card.value !== Values.ace) {
         return false;
       } else if (card.valueOf() === cardWithId(topElement.id).valueOf() as any + 1) {
         return true;
@@ -1130,7 +1123,7 @@ function checkMoveValidity(item: Card | Pile, destination: GamePositions): boole
     } else if (destination > 7 && destination < 12) {
       return foundationCheck(card);
     } else if (destination > 0 && destination < 8) {
-      //Working pile potentiality.
+      //Working pile case.
 
       const pile = state.workingPiles[destination - 1]; //Destination working pile.
 

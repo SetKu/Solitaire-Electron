@@ -1,20 +1,24 @@
 /* http://getbem.com/naming/ */
 
+/* Global variables are declared on root for use throughout the CSS. Including a shared card size value, the game's maximum allowed height, and its border radius. */
 :root {
   --card-size-common: 1.8;
   --game-max-height: 28.4rem;
   --border-radius: 12px;
 }
 
+/* The global font-family is set to Arial. */
 * {
   font-family: Arial;
 }
 
+/* The content of the page is set to be able to reach the viewports border and be arranged in a grid. */
 body {
   margin: 0;
   display: grid;
 }
 
+/* The header is styled to be gray, a nice banner height, have an appropriate title font size, have its elements centered and arranged in a grid, and have a shadow. */
 .header {
   z-index: 0;
   height: 3.4rem;
@@ -27,38 +31,46 @@ body {
   color: whitesmoke;
 }
 
+/* The header title is set to be moved slightly right from its starting position to be closer to the icon. */
 .header__title {
   transform: translateX(1rem);
 }
 
+/* The icon's size is constrained so it doesn't grow too large or appear too small. */
 .header__icon {
   height: 2.3rem;
 }
 
+/* The deck surface is set to be a brown lienar gradient and be twice the height of the viewport (so its scrollable). */
 .deck-surface {
   background: linear-gradient(to bottom right, #6a4d3f, #725242);
-  height: 100vh;
+  height: 150vh;
 }
 
+/* The game is set to be arranged in a grid with three columns of preset width, and have a margin to it doesn't touch the sides of its container element. */
 .game {
   display: grid;
   grid-template-columns: 6rem 4fr 6rem;
   margin: 22pt;
 }
 
+/* The game and game controls are given the same border radius which is defined by the corresponding global root variable. */
 .game, .game__controls {
   border-radius: var(--border-radius);
 }
 
+/* The game, game controls, and alert containers are all given the same shadow. */
 .game, .game__controls, .alert {
   box-shadow: 3pt 3pt 10pt rgba(0, 0, 0, 0.5);
 }
 
+/* The fadeOut animation is defined to fade an object to zero opacity. */
 @keyframes fadeOut {
   from { opacity: 1; }
   to { opacity: 0; }
 }
 
+/* Alerts are set so their content is spaced out to its edges, have a white text colour, an appropriate font size, padding to pleasantly pad to the alert, and a margin so it doesn't touch the viewport or other elements. Additionally, the alert is centered and given a game cloth like background colour. The animation settings are also set on it so that if its given the fade out property it will animate properly. */
 .alert {
   display: flex;
   justify-content: space-between;
@@ -74,14 +86,17 @@ body {
   animation-fill-mode: forwards;
 }
 
+/* The first child of the div is given a border radius on its top left and bottom left corners. */
 .game > div:first-child {
   border-radius: var(--border-radius) 0 0 var(--border-radius);
 }
 
+/* The last child of the div is given a border radius on its top right and bottom right corners. */
 .game > div:last-child {
   border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
+/* The dismiss button of alerts is given an appropriate height, a white colour, a grey border, and border radius. */
 .alert > button {
   width: 2.5rem;
   height: 2.5rem;
@@ -90,6 +105,7 @@ body {
   border-radius: 12px;
 }
 
+/*  */
 .alert > button:active {
   filter: brightness(0.5);
 }
