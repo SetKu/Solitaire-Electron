@@ -12,7 +12,7 @@
   font-family: Arial;
 }
 
-/* The content of the page is set to be able to reach the viewports border and be arranged in a grid. */
+/* The content of the page is set to be able to reach the viewport's border and be arranged in a grid. */
 body {
   margin: 0;
   display: grid;
@@ -41,7 +41,7 @@ body {
   height: 2.3rem;
 }
 
-/* The deck surface is set to be a brown lienar gradient and be twice the height of the viewport (so its scrollable). */
+/* The deck surface is set to be a brown linear gradient and be twice the height of the viewport (so its scrollable). */
 .deck-surface {
   background: linear-gradient(to bottom right, #6a4d3f, #725242);
   height: 150vh;
@@ -136,7 +136,7 @@ body {
   grid-template-rows: repeat(4, 1fr);
 }
 
-/* The stock cloth revealed cards are set to be displayed as though they're not in a seperate container, and thus will show up in a grid aligned with the stock deck. */
+/* The stock cloth revealed cards are set to be displayed as though they're not in a separate container, and thus will show up in a grid aligned with the stock deck. */
 .game__stock-cloth__revealed-cards {
   display: contents;
 }
@@ -229,7 +229,7 @@ body {
   margin-right: auto;
 }
 
-/* The placeholder image in a suit placeholder card is set to be black, have a dropshadow, and have a lower opacity. The image is also positioned to be in the center of the card and has its width set to be the appropriate size. */
+/* The placeholder image in a suit placeholder card is set to be black, have a drop shadow, and have a lower opacity. The image is also positioned to be in the center of the card and has its width set to be the appropriate size. */
 .card--suit-placeholder img {
   filter: brightness(0) drop-shadow(0 0 0.04rem rgba(0, 0, 0, 0.5)) opacity(0.8);
   position: relative;
@@ -290,7 +290,7 @@ body {
   background: #e4e4e4;
 }
 
-/* When a button is normally clicked, it's darkened and slightly moved downwards to simualate a clicking motion. */
+/* When a button is normally clicked, it's darkened and slightly moved downwards to simulate a clicking motion. */
 .button-01:active {
   filter: brightness(0.8);
   transform: translateY(1px);
@@ -321,7 +321,7 @@ body {
   color: rgb(231, 167, 46);
 }
 
-/* If the screen is smaller than 830px, the game board is not large enough for the game to be playable. In this case, all game cards and card objects are styled to disappear. Additionally, text is shown on the gameboard indicating to the user that their viewport is too small to play. This text is centered and set to the colour white. */
+/* If the screen is smaller than 830px, the game board is not large enough for the game to be playable. In this case, all game cards and card objects are styled to disappear. Additionally, text is shown on the game board indicating to the user that their viewport is too small to play. This text is centered and set to the colour white. */
 @media only screen and (max-width: 830px) {
   .game__working-cloth__piles::after {
     position: absolute;

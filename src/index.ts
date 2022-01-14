@@ -1,8 +1,8 @@
-//This file is the index.ts file. It is written in TypeScript and compiled into regular ES6 JavaScript as index.js. This index.js file is then compressed and has its dependecies handled using webpack to creates the ../dist/main.js file which is minified and what the browser actually uses when rendering the index.html file.
+//This file is the index.ts file. It is written in TypeScript and compiled into regular ES6 JavaScript as index.js. This index.js file is then compressed and has its dependencies handled using webpack to creates the ../dist/main.js file which is minified and what the browser actually uses when rendering the index.html file.
 
 import * as e from "express";
 
-//This code imports the uuid node package manager module 'uuid' which can generate random unqiue identifier strings.
+//This code imports the uuid node package manager module 'uuid' which can generate random unique identifier strings.
 let uuid = require('uuid');
 
 /*** Static Elements ***/
@@ -90,7 +90,7 @@ class Card {
   suit: string;
   value: string;
 
-  //The id property stores the card's unqiue identifier which can be used to locate it in the data model and in the user interface.
+  //The id property stores the card's unique identifier which can be used to locate it in the data model and in the user interface.
   id: string;
 
   //The following are properties which affect how the card is implemented and rendered in the user interface.
@@ -523,7 +523,7 @@ class State {
         } else if (i === cards.length - 1) {
           pile.innerHTML += card.html; //The last card is normally added when an embedded pile is not being created.
         } else {
-          pile.innerHTML += Card.faceDownHTML; //A regular face-down card is placed (occuring prior to the last card or start of a pile).
+          pile.innerHTML += Card.faceDownHTML; //A regular face-down card is placed (occurring prior to the last card or start of a pile).
         }
       }
     }
@@ -1117,7 +1117,7 @@ function checkMoveValidity(item: Card | Pile, destination: GamePositions): boole
     const card = item as Card; //Semantic labelling and typecasting.
     const cardElement = document.getElementById(card.id);
 
-    //If the position for the card Element is the same as where its attempting to be moved, the the move is obviously invalid as the card wouldn't actually be *moving* anywhere. If the destination is a foundation deck, a foundationCheck helper function call is executed to determine whether the move is valid. If the move is to a working pile, additonal checks are run.
+    //If the position for the card Element is the same as where its attempting to be moved, the the move is obviously invalid as the card wouldn't actually be *moving* anywhere. If the destination is a foundation deck, a foundationCheck helper function call is executed to determine whether the move is valid. If the move is to a working pile, additional checks are run.
     if (gamePositionForElement(cardElement) === destination) {
       return false;
     } else if (destination > 7 && destination < 12) {
