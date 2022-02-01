@@ -15,7 +15,7 @@
     "webpack": "^5.65.0",
     "webpack-cli": "^4.9.1"
   },
-  "name": "solitaire",
+  "name": "solitaire-electron",
   "version": "1.0.3",
   "main": "app.js",
   "scripts": {
