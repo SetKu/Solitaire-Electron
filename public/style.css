@@ -55,19 +55,26 @@ body {
 }
 
 /* The game and game controls are given the same border radius which is defined by the corresponding global root variable. */
-.game, .game__controls {
+.game,
+.game__controls {
   border-radius: var(--border-radius);
 }
 
 /* The game, game controls, and alert containers are all given the same shadow. */
-.game, .game__controls, .alert {
+.game,
+.game__controls,
+.alert {
   box-shadow: 3pt 3pt 10pt rgba(0, 0, 0, 0.5);
 }
 
 /* The fadeOut animation is defined to fade an object to zero opacity. */
 @keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 /* Alerts are set so their content is spaced out to its edges, have a white text colour, an appropriate font size, padding to pleasantly pad to the alert, and a margin so it doesn't touch the viewport or other elements. Additionally, the alert is centered and given a game cloth like background colour. The animation settings are also set on it so that if its given the fade out property it will animate properly. */
@@ -111,22 +118,28 @@ body {
 }
 
 /* All the game cloths are displayed as grids. */
-.game__stock-cloth, .game__working-cloth, .game__foundation-cloth {
+.game__stock-cloth,
+.game__working-cloth,
+.game__foundation-cloth {
   display: grid;
 }
 
 /* This styling restricts the max height of the game for all the game cloths. */
-.game__stock-cloth, .game__working-cloth, .game__foundation-cloth {
+.game__stock-cloth,
+.game__working-cloth,
+.game__foundation-cloth {
   max-height: var(--game-max-height);
 }
 
 /* This styling sets the background colour for the stock cloth and foundation cloth to a dark green. */
-.game__stock-cloth, .game__foundation-cloth {
+.game__stock-cloth,
+.game__foundation-cloth {
   background-color: #205314;
 }
 
 /* The game stock cloth and foundation cloth are given padding and its items (cards) are set to be place to be center. */
-.game__stock-cloth, .game__foundation-cloth {
+.game__stock-cloth,
+.game__foundation-cloth {
   padding: 0.4em 0;
   place-items: center;
 }
@@ -164,7 +177,10 @@ body {
 }
 
 /* All card variants are set to have a margin, the same border radius, the same shadow, and the same width and height. */
-.card, .card--face-down, .card--suit-placeholder, .deck {
+.card,
+.card--face-down,
+.card--suit-placeholder,
+.deck {
   margin: 0.3rem;
   border-radius: 0.3125rem;
   width: calc(2.5rem * var(--card-size-common));
@@ -173,7 +189,9 @@ body {
 }
 
 /* The face down cards, suit placeholder cards, and decks are all set to have the same background colour and border. The border is also applied inset in the card so that the card does not add the width of the border to the card. */
-.card--face-down, .card--suit-placeholder, .deck {
+.card--face-down,
+.card--suit-placeholder,
+.deck {
   box-sizing: border-box;
   background-color: #27539b;
   border: 0.27rem solid rgba(255, 255, 255, 0.1);
@@ -196,7 +214,8 @@ body {
 }
 
 /* The cards top left and bottom right interior dividers are set to have the same width, be position relative, and in the center of the card (as well as have the same font size for the card values). */
-.card__top-left, .card__bottom-right {
+.card__top-left,
+.card__bottom-right {
   text-align: center;
   position: relative;
   width: 40%;
@@ -224,7 +243,8 @@ body {
 }
 
 /* All cards within a pile are set with a left and right margin to center it horizontally. */
-.pile .card, .pile .card--face-down {
+.pile .card,
+.pile .card--face-down {
   margin-left: auto;
   margin-right: auto;
 }
@@ -265,7 +285,7 @@ body {
   align-items: center;
   width: 8rem;
   height: 3rem;
-  background: #FCFCFD;
+  background: #fcfcfd;
   box-shadow: 0 0.3rem 0 0 rgb(70, 70, 70), 0 0.4rem 9px 0 rgba(70, 70, 70, 0.5);
   border: none;
   border-radius: 6px;
@@ -276,7 +296,7 @@ body {
 /* If the button is disabled, on hover nothing should happen and the background colour should remain the same. */
 .button-01.disabled:hover {
   transition-property: none !important;
-  background: #FCFCFD;
+  background: #fcfcfd;
 }
 
 /* If the button is disabled, it will be set not to change its filter or move in any way when clicked. */
@@ -331,7 +351,11 @@ body {
     color: whitesmoke;
   }
 
-  .card, .card--face-down, .card--suit-placeholder, .deck, .game__controls {
+  .card,
+  .card--face-down,
+  .card--suit-placeholder,
+  .deck,
+  .game__controls {
     display: none;
   }
 
@@ -345,4 +369,10 @@ body {
   .pile {
     transform: scale(1.15) translateY(2.25rem);
   }
+}
+
+/* Hide scrollbar (while still being able to scroll) in Safari and other webkit based interfaces. */
+::-webkit-scrollbar {
+  width: 0; /* Remove scrollbar space */
+  background: transparent; /* Optional: just make scrollbar invisible */
 }
