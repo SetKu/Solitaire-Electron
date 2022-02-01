@@ -4,7 +4,11 @@ const path = require('path');
 function createWindow() {
   const window = new BrowserWindow({
     width: 1200,
-    height: 900
+    height: 900,
+    webPreferences: {
+      contextIsolation: true,
+      sandbox: true,
+    }
   });
 
   window.loadFile(path.join(__dirname, 'public/index.html'));
