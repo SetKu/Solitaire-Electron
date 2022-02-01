@@ -552,9 +552,12 @@ class State {
 
     //These dragStartActions take the elemental target they are called on and stores its id and basic html structure in the event provided's dataTransfer property to be stored over the course of a drag.
     const dragStartActions = (event: DragEvent) => {
-      console.log("drag started", event.currentTarget)
       event.dataTransfer.setData("id", (event.currentTarget as Element).id);
       event.dataTransfer.setData("element", (event.currentTarget as Element).toString());
+
+      let image = new Image();
+      image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+      event.dataTransfer.setDragImage(image, 0, 0);
     }
 
     //For each card the dragStartActions are attached using an event listener for when the user starts dragging a card.
@@ -589,9 +592,8 @@ class State {
         let dragElement = document.getElementById(id);
         let dragItem: Card | Pile; //dragItem is either of type Card or conforms to interface Pile. The purpose of the variable is to store the drag items' data model representation and validate the move attempting to be made.
 
-        //This runs if the element being dragged didn't have an Id or couldn't be found in the DOM. If so, an error is logged. This may happen if the user attempts to drag an image or other non-identifiable element onto the dropTarget. However, this is expected behaviour. The console.log and error statements are there to report the incident if it may be a bug.
+        //This runs if the element being dragged didn't have an Id or couldn't be found in the DOM. If so, an error is logged. This may happen if the user attempts to drag an image or other non-identifiable element onto the dropTarget. However, this is expected behaviour.
         if (dragElement === null) {
-          console.log(`dragElement was null:`, dragElement);
           return;
         }
 
@@ -1058,7 +1060,7 @@ function moveItem(item: Card | Pile, destination: GamePositions) {
     } else if (destination > 7 && destination < 12) {
       const card = pile.cards[pile.cards.length - 1]
       card.dropTarget = true;
-      
+
       foundationPush(card);
       originWorkingPile.pop();
     }
@@ -1091,7 +1093,6 @@ function checkMoveValidity(item: Card | Pile, destination: GamePositions): boole
 
       //If the top element is a suit placeholder and the card is an ace, the move is valid. If the top element is a suit placeholder and it isn't an ace, the move is invalid. If the top element is a card with and the card being checked has a value one greater than that card, the move is valid.
       if (topElement.classList.contains("card--suit-placeholder") && card.value === Values.ace) {
-        console.log("here")
         return true;
       } else if (topElement.classList.contains("card--suit-placeholder") && card.value !== Values.ace) {
         return false;

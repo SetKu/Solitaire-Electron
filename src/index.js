@@ -348,9 +348,11 @@ class State {
         const cards = document.getElementsByClassName("card");
         const piles = document.getElementsByClassName("game__working-cloth__face-up-pile");
         const dragStartActions = (event) => {
-            console.log("drag started", event.currentTarget);
             event.dataTransfer.setData("id", event.currentTarget.id);
             event.dataTransfer.setData("element", event.currentTarget.toString());
+            let image = new Image();
+            image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+            event.dataTransfer.setDragImage(image, 0, 0);
         };
         for (let i = 0; i < cards.length; i++) {
             const card = cards.item(i);
@@ -371,7 +373,6 @@ class State {
                 let dragElement = document.getElementById(id);
                 let dragItem;
                 if (dragElement === null) {
-                    console.log(`dragElement was null:`, dragElement);
                     return;
                 }
                 if (dragElement.classList.contains("game__working-cloth__face-up-pile")) {
@@ -743,7 +744,6 @@ function checkMoveValidity(item, destination) {
             }
             const topElement = foundationCloth.children.item(0);
             if (topElement.classList.contains("card--suit-placeholder") && card.value === Values.ace) {
-                console.log("here");
                 return true;
             }
             else if (topElement.classList.contains("card--suit-placeholder") && card.value !== Values.ace) {
