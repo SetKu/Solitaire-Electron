@@ -1056,7 +1056,10 @@ function moveItem(item: Card | Pile, destination: GamePositions) {
 
       originWorkingPile.splice(originWorkingPile.length - pile.cards.length, pile.cards.length);
     } else if (destination > 7 && destination < 12) {
-      foundationPush(pile.cards[pile.cards.length - 1]);
+      const card = pile.cards[pile.cards.length - 1]
+      card.dropTarget = true;
+      
+      foundationPush(card);
       originWorkingPile.pop();
     }
   }

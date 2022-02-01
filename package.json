@@ -11,8 +11,8 @@
     "webpack-cli": "^4.9.1"
   },
   "name": "solitaire",
-  "version": "1.0.0",
-  "main": "./dist/main.js",
+  "version": "1.0.2",
+  "main": "server.js",
   "scripts": {
     "develop": "tsc & webpack && fg",
     "tsc": "tsc",
