@@ -108,7 +108,7 @@ class Card {
     }
   }
 
-  //This is a computed property which returns the html needed to display the car in the UI.
+  //This is a computed property which returns the html needed to display the card in the UI.
   get html(): string {
     /*
     * HTML structuring for cards adapted from code examples shown in a Medium post by Juha Lindstedt.
