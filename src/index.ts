@@ -1,3 +1,11 @@
+// 
+// index.ts
+// Solitaire
+//
+// Created by Zachary Morden 2021-11-28
+// Copyright © 2022 Zachary Morden. All rights reserved.
+//
+
 //This file is the index.ts file. It is written in TypeScript and compiled into regular ES6 JavaScript as index.js. This index.js file is then compressed and has its dependencies handled using webpack to creates the ../dist/main.js file which is minified and what the browser actually uses when rendering the index.html file.
 
 //This code imports the uuid node package manager module 'uuid' which can generate random unique identifier strings.
